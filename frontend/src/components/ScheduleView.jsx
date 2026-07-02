@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { api } from "../api";
+import { formatDuration } from "../utils/time";
 
 const PRIORITY_COLOR = {
   high: "var(--high)",
@@ -58,7 +59,7 @@ export default function ScheduleView({ planId, onBack }) {
 
       <div className="plan-summary">
         <div className="summary-stat">
-          <div className="value">{totalHours.toFixed(0)}h</div>
+          <div className="value">{formatDuration(totalHours)}</div>
           <div className="label">Total study time</div>
         </div>
         <div className="summary-stat">
@@ -91,7 +92,7 @@ export default function ScheduleView({ planId, onBack }) {
                         flexGrow: s.allocated_hours,
                         background: PRIORITY_COLOR[s.topic.priority],
                       }}
-                      title={`${s.topic.title} — ${s.allocated_hours}h`}
+                      title={`${s.topic.title} — ${formatDuration(s.allocated_hours)}`}
                     >
                       {s.allocated_hours >= 0.75 ? s.topic.title : ""}
                     </div>
@@ -110,11 +111,11 @@ export default function ScheduleView({ planId, onBack }) {
                         style={{ background: PRIORITY_COLOR[s.topic.priority] }}
                       />
                       <span className="session-title">{s.topic.title}</span>
-                      <span className="session-hours">{s.allocated_hours}h</span>
+                      <span className="session-hours">{formatDuration(s.allocated_hours)}</span>
                     </label>
                   ))}
                   <div className="topic-meta" style={{ marginTop: 2 }}>
-                    {dayTotal.toFixed(1)}h scheduled
+                    {formatDuration(dayTotal)} scheduled
                   </div>
                 </div>
               </div>
