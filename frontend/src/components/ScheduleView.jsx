@@ -89,7 +89,7 @@ export default function ScheduleView({ planId, onBack }) {
                       key={s.id}
                       className="day-bar-segment"
                       style={{
-                        flexGrow: s.allocated_hours,
+                        flex: `${s.allocated_hours} 1 0`,
                         background: PRIORITY_COLOR[s.topic.priority],
                       }}
                       title={`${s.topic.title} — ${formatDuration(s.allocated_hours)}`}

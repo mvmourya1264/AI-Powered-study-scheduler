@@ -90,6 +90,8 @@ button {
   flex: 1;
   width: 100%;
   max-width: 980px;
+  min-width: 0;
+  align-self: center;
   margin: 0 auto;
   padding: 40px 32px 80px;
 }
@@ -334,7 +336,7 @@ input[type="text"], input[type="email"], input[type="password"], input[type="num
 
 .day-card {
   display: grid;
-  grid-template-columns: 64px 1fr;
+  grid-template-columns: 64px minmax(0, 1fr);
   gap: 18px;
   align-items: start;
 }
@@ -356,6 +358,8 @@ input[type="text"], input[type="email"], input[type="password"], input[type="num
 
 .day-bar {
   display: flex;
+  width: 100%;
+  min-width: 0;
   height: 34px;
   border-radius: 4px;
   overflow: hidden;
@@ -363,16 +367,15 @@ input[type="text"], input[type="email"], input[type="password"], input[type="num
 }
 
 .day-bar-segment {
-  display: flex;
-  align-items: center;
+  min-width: 0;
   padding: 0 10px;
   font-size: 12px;
   font-weight: 500;
+  line-height: 34px;
   color: #fff;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  min-width: 4px;
 }
 
 .day-sessions {
@@ -450,6 +453,6 @@ input[type="text"], input[type="email"], input[type="password"], input[type="num
 
 @media (max-width: 640px) {
   .main { padding: 24px 16px 60px; }
-  .day-card { grid-template-columns: 44px 1fr; gap: 10px; }
+  .day-card { grid-template-columns: 44px minmax(0, 1fr); gap: 10px; }
   .plan-summary { flex-wrap: wrap; gap: 16px; }
 }
