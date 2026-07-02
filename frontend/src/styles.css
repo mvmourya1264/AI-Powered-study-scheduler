@@ -292,6 +292,18 @@ input[type="text"], input[type="email"], input[type="password"], input[type="num
   border-color: var(--focus-ring);
 }
 
+.syllabus-action {
+  display: inline-block;
+  margin-top: 8px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--ink-soft);
+}
+
+.syllabus-action.has-plan {
+  color: var(--focus-ring);
+}
+
 /* --- Schedule / day rail (signature element) --- */
 
 .plan-summary {

@@ -1,0 +1,27 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+venv/
+.venv/
+*.egg-info/
+
+# Local database (contains user data)
+backend/study_scheduler.db
+*.db
+
+# Environment / secrets
+.env
+.env.*
+!.env.example
+
+# Node
+node_modules/
+dist/
+dist-ssr/
+
+# OS / editor
+.DS_Store
+.idea/
+.vscode/
+*.log

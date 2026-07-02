@@ -72,6 +72,54 @@ def _detect_marks(line: str) -> float | None:
     return None
 
 
+def _line_looks_complete(raw_line: str) -> bool:
+    """Whether a line looks like a finished topic title (not mid-wrap)."""
+    stripped = raw_line.strip()
+    if re.search(r"[.!?]\s*$", stripped):
+        return True
+    if _detect_priority(raw_line) or _detect_marks(raw_line):
+        return True
+    return False
+
+
+def _looks_like_standalone_topic(line: str) -> bool:
+    """Short, capitalized lines are usually their own topic, not wrap fragments."""
+    words = line.split()
+    return bool(line and line[0].isupper() and len(words) <= 2)
+
+
+def _is_wrapped_continuation(prev_raw_line: str, line: str) -> bool:
+    """
+    Detect PDF line-wrap continuations vs a new plain-list topic.
+
+    Tradeoff: plain syllabi (one short topic per line, no bullets) look identical
+    to wrapped titles on the continuation line. We merge only when the previous
+    line looks cut off *and* was long enough to plausibly wrap, or when the
+    current line starts lowercase (strong wrap signal). Short capitalized lines
+    (≤2 words) are treated as new topics so "Sorting Algorithms" after a long
+    wrapped title is not swallowed into it.
+    """
+    if BULLET_PREFIX.match(line):
+        return False
+    if any(p.search(line) for p in NOISE_PATTERNS):
+        return False
+
+    if line and line[0].islower():
+        return True
+
+    if _looks_like_standalone_topic(line):
+        return False
+
+    if _line_looks_complete(prev_raw_line):
+        return False
+
+    prev = prev_raw_line.strip()
+    if len(prev) >= 30 or len(prev.split()) >= 4:
+        return True
+
+    return False
+
+
 def _clean_title(line: str) -> str:
     title = BULLET_PREFIX.sub("", line).strip()
     # strip trailing priority/marks annotations like "- High Priority" or "(10 marks)"
@@ -102,12 +150,20 @@ def extract_text(file: BinaryIO | bytes) -> str:
 def parse_syllabus_text(raw_text: str) -> List[ParsedTopic]:
     topics: List[ParsedTopic] = []
     order_index = 0
+    last_raw_line: str | None = None
 
     for raw_line in raw_text.splitlines():
         line = raw_line.strip()
         if not line or len(line) < 3:
             continue
         if any(p.search(line) for p in NOISE_PATTERNS):
+            continue
+
+        if topics and last_raw_line and _is_wrapped_continuation(last_raw_line, line):
+            continuation = _clean_title(line)
+            if continuation:
+                topics[-1]["title"] = f"{topics[-1]['title']} {continuation}".strip()
+            last_raw_line = f"{last_raw_line} {line}"
             continue
 
         # Only treat as a topic line if it looks like a list item, a heading,
@@ -136,6 +192,7 @@ def parse_syllabus_text(raw_text: str) -> List[ParsedTopic]:
             )
         )
         order_index += 1
+        last_raw_line = line
 
     return topics
 

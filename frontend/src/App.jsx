@@ -37,7 +37,13 @@ export default function App() {
       </div>
 
       {view.name === "dashboard" && (
-        <Dashboard onSelectSyllabus={(id) => setView({ name: "topics", syllabusId: id })} />
+        <Dashboard
+          onSelectSyllabus={(syllabusId, planId) =>
+            planId
+              ? setView({ name: "schedule", planId })
+              : setView({ name: "topics", syllabusId })
+          }
+        />
       )}
 
       {view.name === "topics" && (

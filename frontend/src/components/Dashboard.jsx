@@ -1,8 +1,20 @@
 import { useEffect, useRef, useState } from "react";
 import { api } from "../api";
 
+function latestPlanBySyllabus(plans) {
+  const bySyllabus = {};
+  for (const plan of plans) {
+    const existing = bySyllabus[plan.syllabus_id];
+    if (!existing || new Date(plan.created_at) > new Date(existing.created_at)) {
+      bySyllabus[plan.syllabus_id] = plan;
+    }
+  }
+  return bySyllabus;
+}
+
 export default function Dashboard({ onSelectSyllabus }) {
   const [syllabi, setSyllabi] = useState([]);
+  const [plansBySyllabus, setPlansBySyllabus] = useState({});
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [dragActive, setDragActive] = useState(false);
@@ -16,13 +28,19 @@ export default function Dashboard({ onSelectSyllabus }) {
   async function loadSyllabi() {
     setLoading(true);
     try {
-      const res = await api.listSyllabi();
-      setSyllabi(res.data);
+      const [syllabiRes, plansRes] = await Promise.all([api.listSyllabi(), api.listPlans()]);
+      setSyllabi(syllabiRes.data);
+      setPlansBySyllabus(latestPlanBySyllabus(plansRes.data));
     } catch {
       setError("Couldn't load your syllabi.");
     } finally {
       setLoading(false);
     }
+  }
+
+  function handleSelectSyllabus(syllabusId) {
+    const plan = plansBySyllabus[syllabusId];
+    onSelectSyllabus(syllabusId, plan?.id);
   }
 
   async function handleFile(file) {
@@ -36,7 +54,7 @@ export default function Dashboard({ onSelectSyllabus }) {
     try {
       const res = await api.uploadSyllabus(file);
       setSyllabi((prev) => [res.data, ...prev]);
-      onSelectSyllabus(res.data.id);
+      onSelectSyllabus(res.data.id, null);
     } catch (err) {
       setError(err?.response?.data?.detail || "Upload failed. Try another file.");
     } finally {
@@ -100,19 +118,30 @@ export default function Dashboard({ onSelectSyllabus }) {
         <p style={{ fontSize: 14 }}>Nothing here yet — upload a syllabus above.</p>
       ) : (
         <div className="syllabus-list">
-          {syllabi.map((s) => (
-            <div key={s.id} className="syllabus-item" onClick={() => onSelectSyllabus(s.id)} style={{ cursor: "pointer" }}>
-              <div>
-                <div style={{ fontWeight: 500 }}>{s.filename}</div>
-                <div className="topic-meta">
-                  {s.topics.length} topics · uploaded {new Date(s.uploaded_at).toLocaleDateString()}
+          {syllabi.map((s) => {
+            const plan = plansBySyllabus[s.id];
+            return (
+              <div
+                key={s.id}
+                className="syllabus-item"
+                onClick={() => handleSelectSyllabus(s.id)}
+                style={{ cursor: "pointer" }}
+              >
+                <div>
+                  <div style={{ fontWeight: 500 }}>{s.filename}</div>
+                  <div className="topic-meta">
+                    {s.topics.length} topics · uploaded {new Date(s.uploaded_at).toLocaleDateString()}
+                  </div>
+                  <span className={`syllabus-action${plan ? " has-plan" : ""}`}>
+                    {plan ? "View schedule" : "Set up schedule"}
+                  </span>
                 </div>
+                <button className="btn danger" onClick={(e) => handleDelete(s.id, e)}>
+                  Delete
+                </button>
               </div>
-              <button className="btn danger" onClick={(e) => handleDelete(s.id, e)}>
-                Delete
-              </button>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>
