@@ -45,6 +45,10 @@ export const api = {
   deletePlan: (id) => client.delete(`/plan/${id}`),
   updateSession: (sessionId, completed) =>
     client.patch(`/plan/sessions/${sessionId}`, { completed }),
+
+  getProfile: () => client.get("/users/me"),
+  updateProfile: (patch) => client.patch("/users/me", patch),
+  getProgress: () => client.get("/users/me/progress"),
 };
 
 export default client;

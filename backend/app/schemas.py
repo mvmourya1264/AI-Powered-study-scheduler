@@ -19,6 +19,11 @@ class UserOut(BaseModel):
     created_at: datetime
 
 
+class UserUpdate(BaseModel):
+    full_name: Optional[str] = None
+    email: Optional[EmailStr] = None
+
+
 class Token(BaseModel):
     access_token: str
     token_type: str = "bearer"
@@ -93,3 +98,26 @@ class PlanOut(BaseModel):
 
 class SessionUpdate(BaseModel):
     completed: bool
+
+
+# ---------- User progress ----------
+class PlanProgressOut(BaseModel):
+    plan_id: int
+    syllabus_id: int
+    syllabus_filename: str
+    total_days: int
+    total_sessions: int
+    completed_sessions: int
+    total_hours: float
+    completed_hours: float
+    completion_pct: float
+
+
+class ProgressOut(BaseModel):
+    total_plans: int
+    total_sessions: int
+    completed_sessions: int
+    total_hours: float
+    completed_hours: float
+    completion_pct: float
+    plans: List[PlanProgressOut] = []
