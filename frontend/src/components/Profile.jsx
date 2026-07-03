@@ -1,8 +1,11 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { api } from "../api";
 import { formatDuration } from "../utils/time";
+import { removePlanFromProgress } from "../utils/progress";
 
-export default function Profile({ onBack, onOpenPlan, onSignOut, onEmailChanged }) {
+export default function Profile() {
+  const navigate = useNavigate();
   const [profile, setProfile] = useState(null);
   const [progress, setProgress] = useState(null);
   const [fullName, setFullName] = useState("");
@@ -10,29 +13,41 @@ export default function Profile({ onBack, onOpenPlan, onSignOut, onEmailChanged 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [deletingAccount, setDeletingAccount] = useState(false);
+  const [deletingPlanId, setDeletingPlanId] = useState(null);
   const [accountError, setAccountError] = useState("");
   const [accountSuccess, setAccountSuccess] = useState("");
   const [progressError, setProgressError] = useState("");
+  const loadSeq = useRef(0);
 
   useEffect(() => {
     load();
   }, []);
 
   async function load() {
+    const seq = ++loadSeq.current;
     setLoading(true);
     setAccountError("");
     setProgressError("");
     try {
       const [meRes, progressRes] = await Promise.all([api.getMe(), api.getProgress()]);
+      if (seq !== loadSeq.current) return;
       setProfile(meRes.data);
       setFullName(meRes.data.full_name || "");
       setEmail(meRes.data.email);
       setProgress(progressRes.data);
     } catch {
+      if (seq !== loadSeq.current) return;
       setAccountError("Could not load profile.");
     } finally {
-      setLoading(false);
+      if (seq === loadSeq.current) {
+        setLoading(false);
+      }
     }
+  }
+
+  function signOut() {
+    localStorage.removeItem("token");
+    navigate("/login", { replace: true });
   }
 
   async function handleSubmit(e) {
@@ -63,7 +78,8 @@ export default function Profile({ onBack, onOpenPlan, onSignOut, onEmailChanged 
       setEmail(res.data.email);
 
       if (patch.email) {
-        onEmailChanged?.();
+        alert("Email updated — please sign in again with your new email.");
+        signOut();
         return;
       }
 
@@ -79,12 +95,14 @@ export default function Profile({ onBack, onOpenPlan, onSignOut, onEmailChanged 
     e.stopPropagation();
     if (!confirm("Delete this schedule? This can't be undone.")) return;
     setProgressError("");
+    setDeletingPlanId(planId);
     try {
       await api.deletePlan(planId);
-      const res = await api.getProgress();
-      setProgress(res.data);
+      setProgress((prev) => (prev ? removePlanFromProgress(prev, planId) : prev));
     } catch (err) {
       setProgressError(err.response?.data?.detail || "Could not delete schedule.");
+    } finally {
+      setDeletingPlanId(null);
     }
   }
 
@@ -100,7 +118,7 @@ export default function Profile({ onBack, onOpenPlan, onSignOut, onEmailChanged 
     setDeletingAccount(true);
     try {
       await api.deleteMe();
-      onSignOut();
+      signOut();
     } catch (err) {
       setAccountError(err.response?.data?.detail || "Could not delete account.");
       setDeletingAccount(false);
@@ -118,10 +136,10 @@ export default function Profile({ onBack, onOpenPlan, onSignOut, onEmailChanged 
   return (
     <div className="main">
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-        <button className="btn ghost" onClick={onBack} style={{ paddingLeft: 0 }}>
+        <button className="btn ghost" onClick={() => navigate("/dashboard")} style={{ paddingLeft: 0 }}>
           ← Back
         </button>
-        <button className="btn ghost" onClick={onSignOut}>
+        <button className="btn ghost" onClick={signOut}>
           Sign out
         </button>
       </div>
@@ -191,13 +209,13 @@ export default function Profile({ onBack, onOpenPlan, onSignOut, onEmailChanged 
               <div
                 className="progress-plan-card card progress-plan-clickable"
                 key={plan.plan_id}
-                onClick={() => onOpenPlan?.(plan.plan_id)}
+                onClick={() => navigate(`/schedule/${plan.plan_id}`)}
                 role="button"
                 tabIndex={0}
                 onKeyDown={(e) => {
                   if (e.key === "Enter" || e.key === " ") {
                     e.preventDefault();
-                    onOpenPlan?.(plan.plan_id);
+                    navigate(`/schedule/${plan.plan_id}`);
                   }
                 }}
               >
@@ -211,9 +229,10 @@ export default function Profile({ onBack, onOpenPlan, onSignOut, onEmailChanged 
                   <button
                     className="btn danger"
                     type="button"
+                    disabled={deletingPlanId === plan.plan_id}
                     onClick={(e) => handleDeletePlan(plan.plan_id, e)}
                   >
-                    Delete
+                    {deletingPlanId === plan.plan_id ? <span className="spinner" /> : "Delete"}
                   </button>
                 </div>
                 <div className="progress-bar" style={{ marginTop: 10 }}>

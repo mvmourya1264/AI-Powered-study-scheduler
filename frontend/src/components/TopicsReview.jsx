@@ -1,9 +1,14 @@
 import { useEffect, useState } from "react";
+import { useNavigate, useParams } from "react-router-dom";
 import { api } from "../api";
 
 const PRIORITIES = ["high", "medium", "low"];
 
-export default function TopicsReview({ syllabusId, onBack, onPlanCreated }) {
+export default function TopicsReview() {
+  const navigate = useNavigate();
+  const { syllabusId } = useParams();
+  const id = Number(syllabusId);
+
   const [syllabus, setSyllabus] = useState(null);
   const [newTitle, setNewTitle] = useState("");
   const [totalDays, setTotalDays] = useState(14);
@@ -14,10 +19,10 @@ export default function TopicsReview({ syllabusId, onBack, onPlanCreated }) {
 
   useEffect(() => {
     load();
-  }, [syllabusId]);
+  }, [id]);
 
   async function load() {
-    const res = await api.getSyllabus(syllabusId);
+    const res = await api.getSyllabus(id);
     setSyllabus(res.data);
   }
 
@@ -31,7 +36,7 @@ export default function TopicsReview({ syllabusId, onBack, onPlanCreated }) {
 
   async function addTopic() {
     if (!newTitle.trim()) return;
-    const res = await api.addTopic(syllabusId, {
+    const res = await api.addTopic(id, {
       title: newTitle.trim(),
       priority: "medium",
       weight: 1.0,
@@ -41,9 +46,9 @@ export default function TopicsReview({ syllabusId, onBack, onPlanCreated }) {
     setNewTitle("");
   }
 
-  async function removeTopic(id) {
-    await api.deleteTopic(id);
-    setSyllabus((prev) => ({ ...prev, topics: prev.topics.filter((t) => t.id !== id) }));
+  async function removeTopic(topicId) {
+    await api.deleteTopic(topicId);
+    setSyllabus((prev) => ({ ...prev, topics: prev.topics.filter((t) => t.id !== topicId) }));
   }
 
   async function handleGenerate() {
@@ -55,12 +60,12 @@ export default function TopicsReview({ syllabusId, onBack, onPlanCreated }) {
     setGenerating(true);
     try {
       const res = await api.generatePlan({
-        syllabus_id: syllabusId,
+        syllabus_id: id,
         total_days: Number(totalDays),
         hours_per_day: Number(hoursPerDay),
         start_date: startDate ? new Date(startDate).toISOString() : null,
       });
-      onPlanCreated(res.data.id);
+      navigate(`/schedule/${res.data.id}`);
     } catch (err) {
       setError(err?.response?.data?.detail || "Couldn't generate the plan.");
     } finally {
@@ -72,7 +77,11 @@ export default function TopicsReview({ syllabusId, onBack, onPlanCreated }) {
 
   return (
     <div className="main">
-      <button className="btn ghost" onClick={onBack} style={{ marginBottom: 12, paddingLeft: 0 }}>
+      <button
+        className="btn ghost"
+        onClick={() => navigate("/dashboard")}
+        style={{ marginBottom: 12, paddingLeft: 0 }}
+      >
         ← Back to syllabi
       </button>
       <div className="eyebrow">{syllabus.filename}</div>

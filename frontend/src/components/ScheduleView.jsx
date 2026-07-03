@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useNavigate, useParams } from "react-router-dom";
 import { api } from "../api";
 import { formatDuration } from "../utils/time";
 
@@ -19,15 +20,19 @@ function groupByDay(sessions) {
     .sort((a, b) => a.day - b.day);
 }
 
-export default function ScheduleView({ planId, onBack }) {
+export default function ScheduleView() {
+  const navigate = useNavigate();
+  const { planId } = useParams();
+  const id = Number(planId);
+
   const [plan, setPlan] = useState(null);
 
   useEffect(() => {
     load();
-  }, [planId]);
+  }, [id]);
 
   async function load() {
-    const res = await api.getPlan(planId);
+    const res = await api.getPlan(id);
     setPlan(res.data);
   }
 
@@ -50,7 +55,11 @@ export default function ScheduleView({ planId, onBack }) {
 
   return (
     <div className="main">
-      <button className="btn ghost" onClick={onBack} style={{ marginBottom: 12, paddingLeft: 0 }}>
+      <button
+        className="btn ghost"
+        onClick={() => navigate("/dashboard")}
+        style={{ marginBottom: 12, paddingLeft: 0 }}
+      >
         ← Back
       </button>
       <div className="eyebrow">Your schedule</div>

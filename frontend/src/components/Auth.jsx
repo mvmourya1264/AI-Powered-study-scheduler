@@ -1,7 +1,9 @@
+import { useNavigate } from "react-router-dom";
 import { useState } from "react";
 import { api } from "../api";
 
-export default function Auth({ onAuthed }) {
+export default function Auth() {
+  const navigate = useNavigate();
   const [mode, setMode] = useState("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -19,7 +21,7 @@ export default function Auth({ onAuthed }) {
       }
       const res = await api.login(email, password);
       localStorage.setItem("token", res.data.access_token);
-      onAuthed();
+      navigate("/dashboard", { replace: true });
     } catch (err) {
       setError(err?.response?.data?.detail || "Something went wrong. Try again.");
     } finally {
