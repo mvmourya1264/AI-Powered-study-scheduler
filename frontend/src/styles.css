@@ -465,6 +465,23 @@ input[type="text"], input[type="email"], input[type="password"], input[type="num
   gap: 16px;
 }
 
+.topbar-icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px;
+  color: var(--ink-soft);
+}
+
+.topbar-icon-btn:hover {
+  color: var(--ink);
+}
+
+.danger-zone {
+  border-color: var(--high-tint);
+  background: var(--paper);
+}
+
 .progress-plan-pct {
   font-family: var(--font-display);
   font-size: 22px;

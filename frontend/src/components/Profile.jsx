@@ -2,15 +2,17 @@ import { useEffect, useState } from "react";
 import { api } from "../api";
 import { formatDuration } from "../utils/time";
 
-export default function Profile({ onBack, onOpenPlan, onEmailChanged }) {
+export default function Profile({ onBack, onOpenPlan, onSignOut, onEmailChanged }) {
   const [profile, setProfile] = useState(null);
   const [progress, setProgress] = useState(null);
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [deletingAccount, setDeletingAccount] = useState(false);
   const [accountError, setAccountError] = useState("");
   const [accountSuccess, setAccountSuccess] = useState("");
+  const [progressError, setProgressError] = useState("");
 
   useEffect(() => {
     load();
@@ -19,6 +21,7 @@ export default function Profile({ onBack, onOpenPlan, onEmailChanged }) {
   async function load() {
     setLoading(true);
     setAccountError("");
+    setProgressError("");
     try {
       const [meRes, progressRes] = await Promise.all([api.getMe(), api.getProgress()]);
       setProfile(meRes.data);
@@ -72,6 +75,38 @@ export default function Profile({ onBack, onOpenPlan, onEmailChanged }) {
     }
   }
 
+  async function handleDeletePlan(planId, e) {
+    e.stopPropagation();
+    if (!confirm("Delete this schedule? This can't be undone.")) return;
+    setProgressError("");
+    try {
+      await api.deletePlan(planId);
+      const res = await api.getProgress();
+      setProgress(res.data);
+    } catch (err) {
+      setProgressError(err.response?.data?.detail || "Could not delete schedule.");
+    }
+  }
+
+  async function handleDeleteAccount() {
+    if (
+      !confirm(
+        "This will permanently delete your account and all study plans. This can't be undone."
+      )
+    ) {
+      return;
+    }
+    setAccountError("");
+    setDeletingAccount(true);
+    try {
+      await api.deleteMe();
+      onSignOut();
+    } catch (err) {
+      setAccountError(err.response?.data?.detail || "Could not delete account.");
+      setDeletingAccount(false);
+    }
+  }
+
   if (loading) {
     return (
       <div className="main">
@@ -82,9 +117,14 @@ export default function Profile({ onBack, onOpenPlan, onEmailChanged }) {
 
   return (
     <div className="main">
-      <button className="btn ghost" onClick={onBack} style={{ marginBottom: 12, paddingLeft: 0 }}>
-        ← Back
-      </button>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+        <button className="btn ghost" onClick={onBack} style={{ paddingLeft: 0 }}>
+          ← Back
+        </button>
+        <button className="btn ghost" onClick={onSignOut}>
+          Sign out
+        </button>
+      </div>
       <div className="eyebrow">Settings</div>
       <h1>Profile</h1>
 
@@ -122,8 +162,9 @@ export default function Profile({ onBack, onOpenPlan, onEmailChanged }) {
       </form>
 
       <h2 style={{ marginBottom: 16 }}>Your progress</h2>
+      {progressError && <div className="error-msg" style={{ marginBottom: 12 }}>{progressError}</div>}
       {!progress || progress.plans.length === 0 ? (
-        <p style={{ fontSize: 14 }}>You haven&apos;t generated any study plans yet.</p>
+        <p style={{ fontSize: 14, marginBottom: 40 }}>You haven&apos;t generated any study plans yet.</p>
       ) : (
         <>
           <div className="plan-summary">
@@ -145,7 +186,7 @@ export default function Profile({ onBack, onOpenPlan, onEmailChanged }) {
             </div>
           </div>
 
-          <div className="progress-plan-list">
+          <div className="progress-plan-list" style={{ marginBottom: 40 }}>
             {progress.plans.map((plan) => (
               <div
                 className="progress-plan-card card progress-plan-clickable"
@@ -161,10 +202,19 @@ export default function Profile({ onBack, onOpenPlan, onEmailChanged }) {
                 }}
               >
                 <div className="progress-plan-header">
-                  <div style={{ fontWeight: 500 }}>{plan.syllabus_filename}</div>
-                  <div className="topic-meta">
-                    {plan.completed_sessions}/{plan.total_sessions} sessions
+                  <div>
+                    <div style={{ fontWeight: 500 }}>{plan.syllabus_filename}</div>
+                    <div className="topic-meta">
+                      {plan.completed_sessions}/{plan.total_sessions} sessions
+                    </div>
                   </div>
+                  <button
+                    className="btn danger"
+                    type="button"
+                    onClick={(e) => handleDeletePlan(plan.plan_id, e)}
+                  >
+                    Delete
+                  </button>
                 </div>
                 <div className="progress-bar" style={{ marginTop: 10 }}>
                   <div
@@ -177,6 +227,21 @@ export default function Profile({ onBack, onOpenPlan, onEmailChanged }) {
           </div>
         </>
       )}
+
+      <div className="danger-zone card">
+        <h2 style={{ color: "var(--high)", marginBottom: 8 }}>Danger zone</h2>
+        <p style={{ fontSize: 14, marginBottom: 16 }}>
+          Permanently delete your account and all syllabi, study plans, and progress data.
+        </p>
+        <button
+          className="btn danger"
+          type="button"
+          onClick={handleDeleteAccount}
+          disabled={deletingAccount}
+        >
+          {deletingAccount ? <span className="spinner" /> : "Delete account"}
+        </button>
+      </div>
     </div>
   );
 }

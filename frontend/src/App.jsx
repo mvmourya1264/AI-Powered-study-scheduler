@@ -6,6 +6,24 @@ import TopicsReview from "./components/TopicsReview";
 import ScheduleView from "./components/ScheduleView";
 import Profile from "./components/Profile";
 
+function UserIcon() {
+  return (
+    <svg
+      width="22"
+      height="22"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.75"
+      strokeLinecap="round"
+      aria-hidden="true"
+    >
+      <circle cx="12" cy="8" r="4" />
+      <path d="M5 20c0-4 3.5-6 7-6s7 2 7 6" />
+    </svg>
+  );
+}
+
 export default function App() {
   const [authed, setAuthed] = useState(!!localStorage.getItem("token"));
   const [view, setView] = useState({ name: "dashboard" });
@@ -31,11 +49,12 @@ export default function App() {
           study<span className="brand-mark">.</span>plan
         </button>
         <div className="topbar-actions">
-          <button className="btn ghost" onClick={() => setView({ name: "profile" })}>
-            Profile
-          </button>
-          <button className="btn ghost" onClick={logout}>
-            Sign out
+          <button
+            className="btn ghost topbar-icon-btn"
+            onClick={() => setView({ name: "profile" })}
+            aria-label="Profile"
+          >
+            <UserIcon />
           </button>
         </div>
       </div>
@@ -69,6 +88,7 @@ export default function App() {
         <Profile
           onBack={() => setView({ name: "dashboard" })}
           onOpenPlan={(planId) => setView({ name: "schedule", planId })}
+          onSignOut={logout}
           onEmailChanged={() => {
             alert("Email updated — please sign in again with your new email.");
             logout();

@@ -65,8 +65,18 @@ export default function Dashboard({ onSelectSyllabus }) {
   async function handleDelete(id, e) {
     e.stopPropagation();
     if (!confirm("Delete this syllabus and its schedules?")) return;
-    await api.deleteSyllabus(id);
-    setSyllabi((prev) => prev.filter((s) => s.id !== id));
+    setError("");
+    try {
+      await api.deleteSyllabus(id);
+      setSyllabi((prev) => prev.filter((s) => s.id !== id));
+      setPlansBySyllabus((prev) => {
+        const next = { ...prev };
+        delete next[id];
+        return next;
+      });
+    } catch (err) {
+      setError(err?.response?.data?.detail || "Could not delete syllabus. Try again.");
+    }
   }
 
   return (

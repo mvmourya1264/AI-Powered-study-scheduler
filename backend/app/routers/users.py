@@ -99,3 +99,13 @@ def get_progress(db: Session = Depends(get_db), user: models.User = Depends(get_
         percent_complete=_percent_complete(completed_sessions, total_sessions),
         plans=plan_stats,
     )
+
+
+@router.delete("/me", status_code=204)
+def delete_account(db: Session = Depends(get_db), user: models.User = Depends(get_current_user)):
+    for plan in list(user.plans):
+        db.delete(plan)
+    for syllabus in list(user.syllabi):
+        db.delete(syllabus)
+    db.delete(user)
+    db.commit()

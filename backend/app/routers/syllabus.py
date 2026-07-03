@@ -72,6 +72,8 @@ def delete_syllabus(
     syllabus_id: int, db: Session = Depends(get_db), user: models.User = Depends(get_current_user)
 ):
     syllabus = _get_owned_syllabus(db, syllabus_id, user)
+    for plan in list(syllabus.plans):
+        db.delete(plan)
     db.delete(syllabus)
     db.commit()
 

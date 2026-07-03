@@ -123,6 +123,42 @@ def main() -> None:
     assert me.json()["full_name"] == "Updated Name"
     assert me.json()["email"] == email
 
+    plan_id = plan.json()["id"]
+    delete_plan = client.delete(f"/plan/{plan_id}", headers=headers)
+    assert delete_plan.status_code == 204, delete_plan.text
+    progress_after_plan = client.get("/users/me/progress", headers=headers)
+    assert progress_after_plan.json()["total_plans"] == 0
+
+    with patch(
+        "app.routers.syllabus.parse_pdf",
+        return_value=("Algebra\nGeometry\nCalculus", SAMPLE_TOPICS),
+    ):
+        upload2 = client.post(
+            "/syllabus/upload",
+            headers=headers,
+            files={"file": ("sample-syllabus.pdf", b"%PDF-1.4 sample", "application/pdf")},
+        )
+    assert upload2.status_code == 200, upload2.text
+    syllabus_id2 = upload2.json()["id"]
+    plan2 = client.post(
+        "/plan/generate",
+        headers=headers,
+        json={"syllabus_id": syllabus_id2, "total_days": 5, "hours_per_day": 2},
+    )
+    assert plan2.status_code == 200, plan2.text
+
+    delete_syllabus = client.delete(f"/syllabus/{syllabus_id2}", headers=headers)
+    assert delete_syllabus.status_code == 204, delete_syllabus.text
+    syllabi = client.get("/syllabus/", headers=headers)
+    assert all(s["id"] != syllabus_id2 for s in syllabi.json())
+    plans = client.get("/plan/", headers=headers)
+    assert all(p["id"] != plan2.json()["id"] for p in plans.json())
+
+    delete_user = client.delete("/users/me", headers=headers)
+    assert delete_user.status_code == 204, delete_user.text
+    me_after = client.get("/users/me", headers=headers)
+    assert me_after.status_code == 401
+
     print("All checks passed.")
     print(f"Progress: {data['completed_sessions']}/{data['total_sessions']} sessions, "
           f"{data['percent_complete']}% complete")

@@ -39,6 +39,7 @@ class Syllabus(Base):
 
     owner = relationship("User", back_populates="syllabi")
     topics = relationship("Topic", back_populates="syllabus", cascade="all, delete-orphan")
+    plans = relationship("StudyPlan", back_populates="syllabus", cascade="all, delete-orphan")
 
 
 class Topic(Base):
@@ -69,7 +70,7 @@ class StudyPlan(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
 
     owner = relationship("User", back_populates="plans")
-    syllabus = relationship("Syllabus")
+    syllabus = relationship("Syllabus", back_populates="plans")
     sessions = relationship("ScheduleSession", back_populates="plan", cascade="all, delete-orphan")
 
 
