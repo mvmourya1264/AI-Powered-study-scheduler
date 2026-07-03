@@ -450,6 +450,14 @@ input[type="text"], input[type="email"], input[type="password"], input[type="num
   padding: 20px 24px;
 }
 
+.progress-plan-clickable {
+  cursor: pointer;
+}
+
+.progress-plan-clickable:hover {
+  border-color: var(--focus-ring);
+}
+
 .progress-plan-header {
   display: flex;
   justify-content: space-between;

@@ -69,6 +69,7 @@ class StudyPlan(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
 
     owner = relationship("User", back_populates="plans")
+    syllabus = relationship("Syllabus")
     sessions = relationship("ScheduleSession", back_populates="plan", cascade="all, delete-orphan")
 
 

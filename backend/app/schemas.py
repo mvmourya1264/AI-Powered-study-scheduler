@@ -101,16 +101,15 @@ class SessionUpdate(BaseModel):
 
 
 # ---------- User progress ----------
-class PlanProgressOut(BaseModel):
+class PlanProgress(BaseModel):
     plan_id: int
-    syllabus_id: int
     syllabus_filename: str
     total_days: int
     total_sessions: int
     completed_sessions: int
     total_hours: float
     completed_hours: float
-    completion_pct: float
+    percent_complete: float
 
 
 class ProgressOut(BaseModel):
@@ -119,5 +118,5 @@ class ProgressOut(BaseModel):
     completed_sessions: int
     total_hours: float
     completed_hours: float
-    completion_pct: float
-    plans: List[PlanProgressOut] = []
+    percent_complete: float
+    plans: List[PlanProgress] = []

@@ -8,7 +8,7 @@ from ..database import get_db
 router = APIRouter(prefix="/users", tags=["users"])
 
 
-def _completion_pct(completed: int, total: int) -> float:
+def _percent_complete(completed: int, total: int) -> float:
     if total == 0:
         return 0.0
     return round(completed / total * 100, 1)
@@ -48,10 +48,12 @@ def update_profile(
 
 @router.get("/me/progress", response_model=schemas.ProgressOut)
 def get_progress(db: Session = Depends(get_db), user: models.User = Depends(get_current_user)):
-    rows = (
-        db.query(models.StudyPlan, models.Syllabus.filename)
-        .join(models.Syllabus, models.Syllabus.id == models.StudyPlan.syllabus_id)
-        .options(joinedload(models.StudyPlan.sessions))
+    plans = (
+        db.query(models.StudyPlan)
+        .options(
+            joinedload(models.StudyPlan.sessions),
+            joinedload(models.StudyPlan.syllabus),
+        )
         .filter(models.StudyPlan.user_id == user.id)
         .order_by(models.StudyPlan.created_at.desc())
         .all()
@@ -63,7 +65,7 @@ def get_progress(db: Session = Depends(get_db), user: models.User = Depends(get_
     total_hours = 0.0
     completed_hours = 0.0
 
-    for plan, filename in rows:
+    for plan in plans:
         sessions = plan.sessions
         plan_total = len(sessions)
         plan_completed = sum(1 for s in sessions if s.completed)
@@ -76,25 +78,24 @@ def get_progress(db: Session = Depends(get_db), user: models.User = Depends(get_
         completed_hours += plan_completed_hours
 
         plan_stats.append(
-            schemas.PlanProgressOut(
+            schemas.PlanProgress(
                 plan_id=plan.id,
-                syllabus_id=plan.syllabus_id,
-                syllabus_filename=filename,
+                syllabus_filename=plan.syllabus.filename,
                 total_days=plan.total_days,
                 total_sessions=plan_total,
                 completed_sessions=plan_completed,
                 total_hours=round(plan_hours, 2),
                 completed_hours=round(plan_completed_hours, 2),
-                completion_pct=_completion_pct(plan_completed, plan_total),
+                percent_complete=_percent_complete(plan_completed, plan_total),
             )
         )
 
     return schemas.ProgressOut(
-        total_plans=len(rows),
+        total_plans=len(plans),
         total_sessions=total_sessions,
         completed_sessions=completed_sessions,
         total_hours=round(total_hours, 2),
         completed_hours=round(completed_hours, 2),
-        completion_pct=_completion_pct(completed_sessions, total_sessions),
+        percent_complete=_percent_complete(completed_sessions, total_sessions),
         plans=plan_stats,
     )
