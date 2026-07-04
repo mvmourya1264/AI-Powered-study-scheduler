@@ -367,15 +367,27 @@ button {
 .pomodoro-page-card {
   max-width: 420px;
   margin: 8px auto 0;
+  min-width: 0;
+  overflow: visible;
+}
+
+.pomodoro-page-inner {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
 }
 
 .pomodoro-timer {
   width: 100%;
+  max-width: 100%;
+  min-width: 0;
   display: flex;
   flex-direction: column;
   align-items: center;
   text-align: center;
   position: relative;
+  overflow: visible;
+  box-sizing: border-box;
 }
 
 .pomodoro-timer.pomodoro-flash .pomodoro-ring-progress {
@@ -386,14 +398,24 @@ button {
 .pomodoro-modes {
   display: flex;
   flex-wrap: wrap;
-  gap: 4px;
+  gap: 6px;
   justify-content: center;
+  align-items: center;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
   margin-bottom: 16px;
+  box-sizing: border-box;
 }
 
 .pomodoro-mode-btn {
+  flex: 0 1 auto;
   font-size: 11px;
-  padding: 6px 8px;
+  padding: 8px 10px;
+  justify-content: center;
+  white-space: nowrap;
+  line-height: 1.25;
+  text-align: center;
 }
 
 .pomodoro-mode-btn.active {
@@ -404,12 +426,15 @@ button {
 
 .pomodoro-settings {
   width: 100%;
+  max-width: 100%;
+  min-width: 0;
   margin-bottom: 16px;
+  box-sizing: border-box;
 }
 
 .pomodoro-customize-btn {
   font-size: 12px;
-  padding: 6px 0;
+  padding: 8px 0;
   margin-bottom: 8px;
 }
 
@@ -421,6 +446,10 @@ button {
   border-radius: 6px;
   background: var(--paper);
   text-align: left;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
 }
 
 .pomodoro-duration-field {
@@ -433,13 +462,21 @@ button {
 
 .pomodoro-ring-wrap {
   position: relative;
-  width: 200px;
-  height: 200px;
-  margin-bottom: 16px;
+  width: 100%;
+  max-width: 200px;
+  aspect-ratio: 1;
+  height: auto;
+  margin: 0 auto 16px;
+  flex-shrink: 0;
+  overflow: visible;
+  box-sizing: border-box;
 }
 
 .pomodoro-ring {
   display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
 }
 
 .pomodoro-ring-track {
@@ -461,15 +498,20 @@ button {
   align-items: center;
   justify-content: center;
   font-family: var(--font-display);
-  font-size: 36px;
+  font-size: clamp(28px, 8vw, 36px);
   font-weight: 600;
   letter-spacing: 0.02em;
+  pointer-events: none;
 }
 
 .pomodoro-controls {
   display: flex;
+  flex-wrap: wrap;
   gap: 8px;
   margin-bottom: 12px;
+  justify-content: center;
+  width: 100%;
+  max-width: 100%;
 }
 
 .pomodoro-sessions {
@@ -487,6 +529,10 @@ button {
   border-radius: 6px;
   font-size: 12px;
   white-space: nowrap;
+  max-width: min(280px, calc(100vw - 48px));
+  overflow: hidden;
+  text-overflow: ellipsis;
+  box-sizing: border-box;
   z-index: 2;
 }
 
@@ -1503,18 +1549,28 @@ input[type="text"], input[type="email"], input[type="password"], input[type="num
     max-width: 100%;
   }
 
+  .pomodoro-timer {
+    align-items: stretch;
+  }
+
   .pomodoro-ring-wrap {
-    width: min(180px, 70vw);
-    height: min(180px, 70vw);
+    max-width: min(280px, 100%);
+    align-self: center;
   }
 
-  .pomodoro-ring {
+  .pomodoro-mode-btn {
+    flex: 1 1 calc(33.333% - 6px);
+    min-width: 88px;
+    min-height: 44px;
+    font-size: 11px;
+    padding: 8px 4px;
+    white-space: normal;
+  }
+
+  .pomodoro-customize-btn {
+    min-height: 44px;
     width: 100%;
-    height: 100%;
-  }
-
-  .pomodoro-time {
-    font-size: 32px;
+    justify-content: center;
   }
 
   .pomodoro-controls {
@@ -1523,8 +1579,9 @@ input[type="text"], input[type="email"], input[type="password"], input[type="num
   }
 
   .pomodoro-controls .btn {
-    flex: 1;
-    max-width: 140px;
+    flex: 1 1 120px;
+    max-width: 160px;
+    min-height: 44px;
   }
 
   .pomodoro-settings-panel {
@@ -1534,6 +1591,11 @@ input[type="text"], input[type="email"], input[type="password"], input[type="num
   .pomodoro-duration-field input {
     max-width: none;
     width: 100%;
+  }
+
+  .pomodoro-toast {
+    white-space: normal;
+    text-align: center;
   }
 
   /* Profile */

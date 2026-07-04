@@ -8,7 +8,9 @@ export default function PomodoroPage() {
       <p>Stay focused with timed work sessions.</p>
 
       <div className="card pomodoro-page-card">
-        <PomodoroTimer />
+        <div className="pomodoro-page-inner">
+          <PomodoroTimer />
+        </div>
       </div>
     </div>
   );

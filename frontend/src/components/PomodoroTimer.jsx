@@ -18,6 +18,10 @@ const RING_SIZE = 200;
 const STROKE = 8;
 const RADIUS = (RING_SIZE - STROKE) / 2;
 const CIRCUMFERENCE = 2 * Math.PI * RADIUS;
+const RING_CENTER = RING_SIZE / 2;
+/** Half-stroke padding so the round cap is never clipped at the viewBox edge. */
+const VIEW_PAD = STROKE / 2;
+const VIEW_BOX = `${-VIEW_PAD} ${-VIEW_PAD} ${RING_SIZE + STROKE} ${RING_SIZE + STROKE}`;
 
 function todayKey() {
   const d = new Date();
@@ -206,11 +210,13 @@ export default function PomodoroTimer() {
 
   return (
     <div className={`pomodoro-timer${flash ? " pomodoro-flash" : ""}`}>
-      <div className="pomodoro-modes">
+      <div className="pomodoro-modes" role="tablist" aria-label="Timer mode">
         {Object.entries(MODE_LABELS).map(([key, label]) => (
           <button
             key={key}
             type="button"
+            role="tab"
+            aria-selected={mode === key}
             className={`btn ghost pomodoro-mode-btn${mode === key ? " active" : ""}`}
             onClick={() => switchMode(key)}
           >
@@ -250,23 +256,28 @@ export default function PomodoroTimer() {
       </div>
 
       <div className="pomodoro-ring-wrap">
-        <svg width={RING_SIZE} height={RING_SIZE} className="pomodoro-ring">
+        <svg
+          className="pomodoro-ring"
+          viewBox={VIEW_BOX}
+          preserveAspectRatio="xMidYMid meet"
+          aria-hidden="true"
+        >
           <circle
             className="pomodoro-ring-track"
-            cx={RING_SIZE / 2}
-            cy={RING_SIZE / 2}
+            cx={RING_CENTER}
+            cy={RING_CENTER}
             r={RADIUS}
             strokeWidth={STROKE}
           />
           <circle
             className="pomodoro-ring-progress"
-            cx={RING_SIZE / 2}
-            cy={RING_SIZE / 2}
+            cx={RING_CENTER}
+            cy={RING_CENTER}
             r={RADIUS}
             strokeWidth={STROKE}
             strokeDasharray={CIRCUMFERENCE}
             strokeDashoffset={dashOffset}
-            transform={`rotate(-90 ${RING_SIZE / 2} ${RING_SIZE / 2})`}
+            transform={`rotate(-90 ${RING_CENTER} ${RING_CENTER})`}
           />
         </svg>
         <div className="pomodoro-time">{formatTime(secondsLeft)}</div>
