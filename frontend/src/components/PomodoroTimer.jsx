@@ -1,10 +1,18 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
-const MODES = {
-  pomodoro: { label: "Pomodoro", seconds: 25 * 60 },
-  short: { label: "Short break", seconds: 5 * 60 },
-  long: { label: "Long break", seconds: 15 * 60 },
+const MODE_LABELS = {
+  pomodoro: "Pomodoro",
+  short: "Short break",
+  long: "Long break",
 };
+
+const DEFAULT_DURATIONS = {
+  pomodoro: 25,
+  short: 5,
+  long: 15,
+};
+
+const DURATIONS_KEY = "pomodoro-durations";
 
 const RING_SIZE = 200;
 const STROKE = 8;
@@ -33,6 +41,45 @@ function saveSessionCount(count) {
   }
 }
 
+function loadDurations() {
+  try {
+    const raw = localStorage.getItem(DURATIONS_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      return {
+        pomodoro: clampMinutes(parsed.pomodoro ?? DEFAULT_DURATIONS.pomodoro),
+        short: clampMinutes(parsed.short ?? DEFAULT_DURATIONS.short),
+        long: clampMinutes(parsed.long ?? DEFAULT_DURATIONS.long),
+      };
+    }
+  } catch {
+    /* ignore */
+  }
+  return { ...DEFAULT_DURATIONS };
+}
+
+function saveDurations(durations) {
+  try {
+    localStorage.setItem(DURATIONS_KEY, JSON.stringify(durations));
+  } catch {
+    /* ignore */
+  }
+}
+
+function clearDurations() {
+  try {
+    localStorage.removeItem(DURATIONS_KEY);
+  } catch {
+    /* ignore */
+  }
+}
+
+function clampMinutes(value) {
+  const n = parseInt(String(value), 10);
+  if (Number.isNaN(n)) return DEFAULT_DURATIONS.pomodoro;
+  return Math.min(120, Math.max(1, n));
+}
+
 function formatTime(seconds) {
   const m = Math.floor(seconds / 60);
   const s = seconds % 60;
@@ -40,16 +87,18 @@ function formatTime(seconds) {
 }
 
 export default function PomodoroTimer() {
+  const [durations, setDurations] = useState(loadDurations);
   const [mode, setMode] = useState("pomodoro");
-  const [secondsLeft, setSecondsLeft] = useState(MODES.pomodoro.seconds);
+  const [secondsLeft, setSecondsLeft] = useState(() => loadDurations().pomodoro * 60);
   const [running, setRunning] = useState(false);
   const [sessionsToday, setSessionsToday] = useState(loadSessionCount);
   const [flash, setFlash] = useState(false);
   const [toast, setToast] = useState("");
+  const [settingsOpen, setSettingsOpen] = useState(false);
   const intervalRef = useRef(null);
 
-  const totalSeconds = MODES[mode].seconds;
-  const progress = secondsLeft / totalSeconds;
+  const totalSeconds = durations[mode] * 60;
+  const progress = totalSeconds > 0 ? secondsLeft / totalSeconds : 0;
   const dashOffset = CIRCUMFERENCE * (1 - progress);
 
   const stopInterval = useCallback(() => {
@@ -112,16 +161,30 @@ export default function PomodoroTimer() {
 
   useEffect(() => () => stopInterval(), [stopInterval]);
 
+  function applyDuration(modeKey, minutes) {
+    const clamped = clampMinutes(minutes);
+    setDurations((prev) => {
+      const next = { ...prev, [modeKey]: clamped };
+      saveDurations(next);
+      return next;
+    });
+    if (modeKey === mode) {
+      stopInterval();
+      setRunning(false);
+      setSecondsLeft(clamped * 60);
+    }
+  }
+
   function switchMode(nextMode) {
     stopInterval();
     setRunning(false);
     setMode(nextMode);
-    setSecondsLeft(MODES[nextMode].seconds);
+    setSecondsLeft(durations[nextMode] * 60);
   }
 
   function handleStartPause() {
     if (secondsLeft === 0) {
-      setSecondsLeft(MODES[mode].seconds);
+      setSecondsLeft(durations[mode] * 60);
     }
     setRunning((r) => !r);
   }
@@ -129,15 +192,22 @@ export default function PomodoroTimer() {
   function handleReset() {
     stopInterval();
     setRunning(false);
-    setSecondsLeft(MODES[mode].seconds);
+    setSecondsLeft(durations[mode] * 60);
+  }
+
+  function handleResetDefaults() {
+    clearDurations();
+    const defaults = { ...DEFAULT_DURATIONS };
+    setDurations(defaults);
+    stopInterval();
+    setRunning(false);
+    setSecondsLeft(defaults[mode] * 60);
   }
 
   return (
     <div className={`pomodoro-timer${flash ? " pomodoro-flash" : ""}`}>
-      <h3>Pomodoro</h3>
-
       <div className="pomodoro-modes">
-        {Object.entries(MODES).map(([key, { label }]) => (
+        {Object.entries(MODE_LABELS).map(([key, label]) => (
           <button
             key={key}
             type="button"
@@ -147,6 +217,36 @@ export default function PomodoroTimer() {
             {label}
           </button>
         ))}
+      </div>
+
+      <div className="pomodoro-settings">
+        <button
+          type="button"
+          className="btn ghost pomodoro-customize-btn"
+          onClick={() => setSettingsOpen((open) => !open)}
+        >
+          {settingsOpen ? "Hide customize" : "Customize durations"}
+        </button>
+        {settingsOpen && (
+          <div className="pomodoro-settings-panel">
+            {Object.entries(MODE_LABELS).map(([key, label]) => (
+              <div className="field pomodoro-duration-field" key={key}>
+                <label htmlFor={`duration-${key}`}>{label} (min)</label>
+                <input
+                  id={`duration-${key}`}
+                  type="number"
+                  min={1}
+                  max={120}
+                  value={durations[key]}
+                  onChange={(e) => applyDuration(key, e.target.value)}
+                />
+              </div>
+            ))}
+            <button type="button" className="btn secondary" onClick={handleResetDefaults}>
+              Reset to defaults
+            </button>
+          </div>
+        )}
       </div>
 
       <div className="pomodoro-ring-wrap">

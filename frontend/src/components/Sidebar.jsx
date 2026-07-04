@@ -115,7 +115,7 @@ export default function Sidebar() {
           Calendar
         </button>
         <NavLink
-          to="/dashboard#pomodoro"
+          to="/pomodoro"
           className={({ isActive }) => `sidebar-nav-item${isActive ? " active" : ""}`}
         >
           <NavIcon><SidebarIcon name="pomodoro" /></NavIcon>

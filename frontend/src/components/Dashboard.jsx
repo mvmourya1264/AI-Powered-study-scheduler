@@ -1,8 +1,7 @@
 import { useEffect, useState } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { api } from "../api";
 import { formatDuration } from "../utils/time";
-import PomodoroTimer from "./PomodoroTimer";
 
 const PRIORITY_CLASS = { high: "high", medium: "medium", low: "low" };
 const CHART_COLORS = ["var(--high)", "var(--medium)", "var(--low)", "var(--focus-ring)", "#8B7355"];
@@ -161,7 +160,6 @@ function SubjectDonutChart({ subjects }) {
 
 export default function Dashboard() {
   const navigate = useNavigate();
-  const location = useLocation();
   const [dashboard, setDashboard] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -169,11 +167,6 @@ export default function Dashboard() {
   useEffect(() => {
     loadDashboard();
   }, []);
-
-  useEffect(() => {
-    if (loading || location.hash !== "#pomodoro") return;
-    document.getElementById("pomodoro")?.scrollIntoView({ behavior: "smooth", block: "start" });
-  }, [loading, location.hash]);
 
   async function loadDashboard() {
     setLoading(true);
@@ -334,12 +327,6 @@ export default function Dashboard() {
               <div className="card dashboard-panel">
                 <h3>Subject progress</h3>
                 <SubjectDonutChart subjects={dashboard.subject_progress} />
-              </div>
-            </div>
-
-            <div className="dashboard-col-pomodoro" id="pomodoro">
-              <div className="card dashboard-panel pomodoro-panel">
-                <PomodoroTimer />
               </div>
             </div>
 
