@@ -25,6 +25,19 @@ def _greeting_name(user: models.User) -> str:
     return user.email.split("@")[0]
 
 
+def _safe_daily_start_time(user: models.User) -> str:
+    value = getattr(user, "daily_start_time", None)
+    if not value or not str(value).strip():
+        return "09:00"
+    return str(value).strip()
+
+
+def _safe_syllabus_filename(plan: models.StudyPlan) -> str:
+    if plan.syllabus and plan.syllabus.filename:
+        return plan.syllabus.filename
+    return "Untitled syllabus"
+
+
 def _compute_streak_days(db: Session, user_id: int) -> int:
     rows = (
         db.query(func.date(models.ScheduleSession.date).label("day"))
@@ -60,7 +73,7 @@ def _subject_progress_for_plans(plans: list) -> list[schemas.SubjectProgress]:
         result.append(
             schemas.SubjectProgress(
                 plan_id=plan.id,
-                syllabus_filename=plan.syllabus.filename,
+                syllabus_filename=_safe_syllabus_filename(plan),
                 percent_complete=_percent_complete(plan_completed, plan_total),
                 hours_completed=round(plan_completed_hours, 2),
                 hours_total=round(plan_hours, 2),
@@ -189,15 +202,15 @@ def get_dashboard(db: Session = Depends(get_db), user: models.User = Depends(get
         .all()
     )
 
-    time_slots = compute_session_times(today_sessions, user.daily_start_time or "09:00")
+    time_slots = compute_session_times(today_sessions, _safe_daily_start_time(user))
     dashboard_sessions = [
         schemas.DashboardSession(
             session_id=session.id,
-            topic_title=session.topic.title,
-            priority=session.topic.priority,
+            topic_title=session.topic.title if session.topic else "Untitled topic",
+            priority=session.topic.priority if session.topic else models.PriorityLevel.MEDIUM,
             start_time=start_time,
             end_time=end_time,
-            completed=session.completed,
+            completed=bool(session.completed),
             plan_id=session.plan_id,
         )
         for session, (start_time, end_time) in zip(today_sessions, time_slots)

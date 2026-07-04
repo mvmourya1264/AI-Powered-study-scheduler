@@ -19,6 +19,11 @@ class UserOut(BaseModel):
     daily_start_time: str = "09:00"
     created_at: datetime
 
+    @field_validator("daily_start_time", mode="before")
+    @classmethod
+    def coerce_daily_start_time(cls, value):
+        return value or "09:00"
+
 
 class UserUpdate(BaseModel):
     full_name: Optional[str] = None

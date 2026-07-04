@@ -7,6 +7,28 @@ import { useAppData } from "../context/AppDataContext";
 const PRIORITY_CLASS = { high: "high", medium: "medium", low: "low" };
 const CHART_COLORS = ["var(--high)", "var(--medium)", "var(--low)", "var(--focus-ring)", "#8B7355"];
 
+function formatApiError(err, label = "Request") {
+  const status = err?.response?.status;
+  const data = err?.response?.data;
+  let detail = err?.message || "Unknown error";
+
+  if (typeof data?.detail === "string") {
+    detail = data.detail;
+  } else if (Array.isArray(data?.detail)) {
+    detail = data.detail.map((item) => item.msg || JSON.stringify(item)).join("; ");
+  } else if (data && typeof data === "object") {
+    detail = JSON.stringify(data);
+  }
+
+  console.error(`${label} failed`, {
+    status,
+    data,
+    message: err?.message,
+  });
+
+  return status ? `${label} failed (${status}): ${detail}` : `${label} failed: ${detail}`;
+}
+
 function timeOfDayGreeting() {
   const hour = new Date().getHours();
   if (hour < 12) return "Good morning";
@@ -149,8 +171,8 @@ export default function Dashboard() {
     try {
       const res = await api.getDashboard();
       setDashboard(res.data);
-    } catch {
-      setError("Could not load dashboard.");
+    } catch (err) {
+      setError(formatApiError(err, "Could not load dashboard"));
     } finally {
       setLoading(false);
     }

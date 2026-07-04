@@ -27,18 +27,50 @@ def get_db():
 
 def run_migrations(engine):
     """Lightweight column migrations for deployments without Alembic."""
+    import logging
+
     from sqlalchemy import inspect, text
 
+    logger = logging.getLogger(__name__)
     insp = inspect(engine)
     if "users" not in insp.get_table_names():
         return
 
     columns = {c["name"] for c in insp.get_columns("users")}
     if "daily_start_time" not in columns:
+        dialect = engine.dialect.name
+        logger.info("Applying migration: add users.daily_start_time (dialect=%s)", dialect)
+
+        try:
+            with engine.begin() as conn:
+                if dialect == "postgresql":
+                    conn.execute(
+                        text(
+                            "ALTER TABLE users ADD COLUMN IF NOT EXISTS daily_start_time "
+                            "VARCHAR(5) NOT NULL DEFAULT '09:00'"
+                        )
+                    )
+                else:
+                    conn.execute(
+                        text(
+                            "ALTER TABLE users ADD COLUMN daily_start_time VARCHAR(5) "
+                            "NOT NULL DEFAULT '09:00'"
+                        )
+                    )
+            logger.info("Migration applied: users.daily_start_time")
+        except Exception:
+            logger.exception("Failed to apply users.daily_start_time migration")
+            raise
+
+    # Backfill null/empty values from a partial prior migration attempt.
+    try:
         with engine.begin() as conn:
             conn.execute(
                 text(
-                    "ALTER TABLE users ADD COLUMN daily_start_time VARCHAR(5) "
-                    "NOT NULL DEFAULT '09:00'"
+                    "UPDATE users SET daily_start_time = '09:00' "
+                    "WHERE daily_start_time IS NULL OR daily_start_time = ''"
                 )
             )
+    except Exception:
+        logger.exception("Failed to backfill users.daily_start_time")
+        raise

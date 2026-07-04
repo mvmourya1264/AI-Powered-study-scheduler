@@ -23,13 +23,18 @@ def compute_session_times(
     back-to-back starting from daily_start_time. Returns (start_time, end_time)
     pairs as HH:MM strings.
     """
-    hour, minute = _parse_hhmm(daily_start_time)
+    try:
+        hour, minute = _parse_hhmm(daily_start_time)
+    except ValueError:
+        hour, minute = 9, 0
+
     current = datetime(2000, 1, 1, hour, minute)
     result: List[Tuple[str, str]] = []
 
     for session in sessions:
+        hours = getattr(session, "allocated_hours", 0) or 0
         start = current
-        end = start + timedelta(hours=session.allocated_hours)
+        end = start + timedelta(hours=hours)
         result.append((start.strftime("%H:%M"), end.strftime("%H:%M")))
         current = end
 
