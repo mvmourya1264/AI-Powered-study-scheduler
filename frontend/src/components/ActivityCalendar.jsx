@@ -1,57 +1,80 @@
 import { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { api } from "../api";
+import { formatDuration } from "../utils/time";
 
-function dateKey(d) {
+const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+
+const PRIORITY_CLASS = {
+  high: "high",
+  medium: "medium",
+  low: "low",
+};
+
+function dateKey(year, month, day) {
+  const d = new Date(year, month, day);
   const y = d.getFullYear();
   const m = String(d.getMonth() + 1).padStart(2, "0");
-  const day = String(d.getDate()).padStart(2, "0");
-  return `${y}-${m}-${day}`;
+  const dd = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${dd}`;
 }
 
-function buildWeekColumns(activityByDate) {
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const start = new Date(today);
-  start.setDate(start.getDate() - 364);
-  while (start.getDay() !== 0) {
-    start.setDate(start.getDate() - 1);
-  }
-
-  const weeks = [];
-  const cursor = new Date(start);
-
-  while (cursor <= today || weeks.length === 0) {
-    const week = [];
-    for (let i = 0; i < 7; i++) {
-      const cellDate = new Date(cursor);
-      cellDate.setDate(cursor.getDate() + i);
-      if (cellDate > today) {
-        week.push(null);
-      } else {
-        const key = dateKey(cellDate);
-        const entry = activityByDate[key];
-        week.push({
-          date: key,
-          sessions_completed: entry?.sessions_completed || 0,
-          hours_completed: entry?.hours_completed || 0,
-        });
-      }
-    }
-    weeks.push(week);
-    cursor.setDate(cursor.getDate() + 7);
-    if (cursor > today && weeks.length >= 53) break;
-  }
-
-  return weeks;
+function todayKey() {
+  const t = new Date();
+  return dateKey(t.getFullYear(), t.getMonth(), t.getDate());
 }
 
-function cellLevel(count, max) {
+function sessionIntensity(count) {
   if (!count) return 0;
-  if (max <= 1) return 3;
-  const ratio = count / max;
-  if (ratio >= 0.66) return 3;
-  if (ratio >= 0.33) return 2;
-  return 1;
+  if (count <= 2) return 1;
+  if (count <= 4) return 2;
+  return 3;
+}
+
+function buildMonthCells(year, month) {
+  const firstWeekday = new Date(year, month, 1).getDay();
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const cells = [];
+
+  const prevMonthDays = new Date(year, month, 0).getDate();
+  for (let i = firstWeekday - 1; i >= 0; i -= 1) {
+    const day = prevMonthDays - i;
+    cells.push({
+      date: dateKey(year, month - 1, day),
+      day,
+      inMonth: false,
+    });
+  }
+
+  for (let day = 1; day <= daysInMonth; day += 1) {
+    cells.push({
+      date: dateKey(year, month, day),
+      day,
+      inMonth: true,
+    });
+  }
+
+  let nextDay = 1;
+  while (cells.length % 7 !== 0) {
+    cells.push({
+      date: dateKey(year, month + 1, nextDay),
+      day: nextDay,
+      inMonth: false,
+    });
+    nextDay += 1;
+  }
+
+  return cells;
+}
+
+function formatDisplayDate(dateStr) {
+  const [y, m, d] = dateStr.split("-").map(Number);
+  return new Date(y, m - 1, d).toLocaleDateString(undefined, {
+    weekday: "long",
+    month: "long",
+    day: "numeric",
+    year: "numeric",
+  });
 }
 
 function CalendarIcon() {
@@ -75,45 +98,105 @@ function CalendarIcon() {
 export { CalendarIcon };
 
 export default function ActivityCalendar({ open, onClose }) {
-  const [activity, setActivity] = useState(null);
+  const navigate = useNavigate();
+  const [calendarDays, setCalendarDays] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [hovered, setHovered] = useState(null);
+  const [viewMonth, setViewMonth] = useState(() => {
+    const t = new Date();
+    return { year: t.getFullYear(), month: t.getMonth() };
+  });
+  const [selectedDate, setSelectedDate] = useState(null);
 
   useEffect(() => {
-    if (!open) return;
+    if (!open) {
+      setCalendarDays(null);
+      setSelectedDate(null);
+      setError("");
+      const t = new Date();
+      setViewMonth({ year: t.getFullYear(), month: t.getMonth() });
+      return;
+    }
+
     let cancelled = false;
     setLoading(true);
     setError("");
     api
-      .getActivity()
+      .getCalendar()
       .then((res) => {
-        if (!cancelled) setActivity(res.data);
+        if (!cancelled) setCalendarDays(res.data);
       })
       .catch(() => {
-        if (!cancelled) setError("Could not load activity.");
+        if (!cancelled) setError("Could not load calendar.");
       })
       .finally(() => {
         if (!cancelled) setLoading(false);
       });
+
     return () => {
       cancelled = true;
     };
   }, [open]);
 
-  const activityByDate = useMemo(() => {
+  const sessionsByDate = useMemo(() => {
     const map = {};
-    for (const day of activity?.days || []) {
-      map[day.date] = day;
+    for (const day of calendarDays || []) {
+      map[day.date] = day.sessions;
     }
     return map;
-  }, [activity]);
+  }, [calendarDays]);
 
-  const weeks = useMemo(() => buildWeekColumns(activityByDate), [activityByDate]);
+  const monthCells = useMemo(
+    () => buildMonthCells(viewMonth.year, viewMonth.month),
+    [viewMonth]
+  );
 
-  const maxSessions = useMemo(() => {
-    return Math.max(0, ...(activity?.days || []).map((d) => d.sessions_completed));
-  }, [activity]);
+  const monthLabel = new Date(viewMonth.year, viewMonth.month).toLocaleDateString(undefined, {
+    month: "long",
+    year: "numeric",
+  });
+
+  function goPrevMonth() {
+    setViewMonth((prev) => {
+      if (prev.month === 0) return { year: prev.year - 1, month: 11 };
+      return { year: prev.year, month: prev.month - 1 };
+    });
+  }
+
+  function goNextMonth() {
+    setViewMonth((prev) => {
+      if (prev.month === 11) return { year: prev.year + 1, month: 0 };
+      return { year: prev.year, month: prev.month + 1 };
+    });
+  }
+
+  function updateSessionCompleted(sessionId, completed) {
+    setCalendarDays((prev) =>
+      (prev || []).map((day) => ({
+        ...day,
+        sessions: day.sessions.map((s) =>
+          s.session_id === sessionId ? { ...s, completed } : s
+        ),
+      }))
+    );
+  }
+
+  async function toggleSession(session) {
+    const next = !session.completed;
+    updateSessionCompleted(session.session_id, next);
+    try {
+      await api.updateSession(session.session_id, next);
+    } catch {
+      updateSessionCompleted(session.session_id, session.completed);
+    }
+  }
+
+  function openPlan(planId) {
+    onClose();
+    navigate(`/schedule/${planId}`);
+  }
+
+  const selectedSessions = selectedDate ? sessionsByDate[selectedDate] || [] : [];
 
   if (!open) return null;
 
@@ -124,12 +207,12 @@ export default function ActivityCalendar({ open, onClose }) {
         onClick={(e) => e.stopPropagation()}
         role="dialog"
         aria-modal="true"
-        aria-label="Study activity calendar"
+        aria-label="Study schedule calendar"
       >
         <div className="modal-header">
           <div>
-            <div className="eyebrow">Activity</div>
-            <h2 style={{ margin: 0 }}>Study calendar</h2>
+            <div className="eyebrow">Schedule</div>
+            <h2 style={{ margin: 0 }}>{selectedDate ? "Day detail" : "Calendar"}</h2>
           </div>
           <button className="btn ghost" type="button" onClick={onClose} aria-label="Close">
             ✕
@@ -140,63 +223,105 @@ export default function ActivityCalendar({ open, onClose }) {
           <span className="spinner" />
         ) : error ? (
           <div className="error-msg">{error}</div>
-        ) : (
+        ) : selectedDate ? (
           <>
-            <div className="activity-summary">
-              <div className="summary-stat">
-                <div className="value">{activity?.current_streak ?? 0}</div>
-                <div className="label">Day streak</div>
-              </div>
-              <div className="summary-stat">
-                <div className="value">{activity?.total_active_days ?? 0}</div>
-                <div className="label">Active days</div>
-              </div>
-            </div>
-
-            <div className="activity-heatmap-wrap">
-              <div className="activity-day-labels">
-                {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((label, i) => (
-                  <span key={label} className="activity-day-label" style={{ gridRow: i + 1 }}>
-                    {i % 2 === 1 ? label : ""}
-                  </span>
-                ))}
-              </div>
-              <div className="activity-heatmap">
-                {weeks.map((week, wi) => (
-                  <div className="activity-week" key={wi}>
-                    {week.map((cell, di) =>
-                      cell ? (
-                        <div
-                          key={cell.date}
-                          className={`activity-cell level-${cellLevel(cell.sessions_completed, maxSessions)}`}
-                          onMouseEnter={() => setHovered(cell)}
-                          onMouseLeave={() => setHovered(null)}
-                          title={`${cell.date}: ${cell.sessions_completed} session(s)`}
-                        />
-                      ) : (
-                        <div key={`empty-${wi}-${di}`} className="activity-cell empty" />
-                      )
-                    )}
+            <button
+              className="btn ghost"
+              type="button"
+              style={{ paddingLeft: 0, marginBottom: 12 }}
+              onClick={() => setSelectedDate(null)}
+            >
+              ← Back to calendar
+            </button>
+            <p className="topic-meta" style={{ marginBottom: 16 }}>
+              {formatDisplayDate(selectedDate)}
+            </p>
+            {selectedSessions.length === 0 ? (
+              <p style={{ fontSize: 14 }}>Nothing scheduled this day.</p>
+            ) : (
+              <div className="calendar-day-sessions">
+                {selectedSessions.map((session) => (
+                  <div className="calendar-session-row" key={session.session_id}>
+                    <label className={`session-line${session.completed ? " completed" : ""}`}>
+                      <input
+                        type="checkbox"
+                        checked={session.completed}
+                        onChange={() => toggleSession(session)}
+                      />
+                      <span className={`priority-dot ${PRIORITY_CLASS[session.priority]}`} />
+                      <span className="session-title">{session.topic_title}</span>
+                      <span className="session-hours">{formatDuration(session.allocated_hours)}</span>
+                    </label>
+                    <button
+                      type="button"
+                      className="calendar-plan-link topic-meta"
+                      onClick={() => openPlan(session.plan_id)}
+                    >
+                      from: {session.syllabus_filename}
+                    </button>
                   </div>
                 ))}
               </div>
+            )}
+          </>
+        ) : (
+          <>
+            <div className="calendar-nav">
+              <button className="btn ghost" type="button" onClick={goPrevMonth} aria-label="Previous month">
+                ←
+              </button>
+              <div className="calendar-month-label">{monthLabel}</div>
+              <button className="btn ghost" type="button" onClick={goNextMonth} aria-label="Next month">
+                →
+              </button>
             </div>
 
-            {hovered && (
-              <div className="activity-tooltip">
-                <strong>{hovered.date}</strong>
-                <span>
-                  {hovered.sessions_completed} session{hovered.sessions_completed === 1 ? "" : "s"} completed
-                </span>
+            <div className="month-calendar">
+              <div className="month-calendar-weekdays">
+                {WEEKDAYS.map((label) => (
+                  <div key={label} className="month-calendar-weekday">
+                    {label}
+                  </div>
+                ))}
               </div>
-            )}
+              <div className="month-calendar-grid">
+                {monthCells.map((cell) => {
+                  const count = (sessionsByDate[cell.date] || []).length;
+                  const level = sessionIntensity(count);
+                  const isToday = cell.date === todayKey();
+                  return (
+                    <button
+                      key={cell.date}
+                      type="button"
+                      className={[
+                        "month-calendar-cell",
+                        `intensity-${level}`,
+                        cell.inMonth ? "in-month" : "out-month",
+                        isToday ? "is-today" : "",
+                        selectedDate === cell.date ? "is-selected" : "",
+                      ]
+                        .filter(Boolean)
+                        .join(" ")}
+                      onClick={() => setSelectedDate(cell.date)}
+                      title={
+                        count
+                          ? `${cell.date}: ${count} scheduled session${count === 1 ? "" : "s"}`
+                          : cell.date
+                      }
+                    >
+                      <span className="month-calendar-day-num">{cell.day}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
 
             <div className="activity-legend">
               <span className="topic-meta">Less</span>
-              <div className="activity-cell level-0" />
-              <div className="activity-cell level-1" />
-              <div className="activity-cell level-2" />
-              <div className="activity-cell level-3" />
+              <div className="month-calendar-legend-swatch intensity-0" />
+              <div className="month-calendar-legend-swatch intensity-1" />
+              <div className="month-calendar-legend-swatch intensity-2" />
+              <div className="month-calendar-legend-swatch intensity-3" />
               <span className="topic-meta">More</span>
             </div>
           </>

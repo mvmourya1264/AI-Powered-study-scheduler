@@ -1,4 +1,5 @@
 from datetime import datetime, timedelta, date
+from typing import List
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import func
@@ -102,6 +103,41 @@ def get_progress(db: Session = Depends(get_db), user: models.User = Depends(get_
         percent_complete=_percent_complete(completed_sessions, total_sessions),
         plans=plan_stats,
     )
+
+
+@router.get("/me/calendar", response_model=List[schemas.CalendarDay])
+def get_calendar(db: Session = Depends(get_db), user: models.User = Depends(get_current_user)):
+    sessions = (
+        db.query(models.ScheduleSession)
+        .join(models.StudyPlan, models.ScheduleSession.plan_id == models.StudyPlan.id)
+        .options(
+            joinedload(models.ScheduleSession.topic),
+            joinedload(models.ScheduleSession.plan).joinedload(models.StudyPlan.syllabus),
+        )
+        .filter(
+            models.StudyPlan.user_id == user.id,
+            models.ScheduleSession.date.isnot(None),
+        )
+        .order_by(models.ScheduleSession.date)
+        .all()
+    )
+
+    by_date: dict[str, list[schemas.CalendarSession]] = {}
+    for session in sessions:
+        day_key = session.date.date().isoformat()
+        by_date.setdefault(day_key, []).append(
+            schemas.CalendarSession(
+                session_id=session.id,
+                plan_id=session.plan_id,
+                syllabus_filename=session.plan.syllabus.filename,
+                topic_title=session.topic.title,
+                priority=session.topic.priority,
+                allocated_hours=session.allocated_hours,
+                completed=session.completed,
+            )
+        )
+
+    return [schemas.CalendarDay(date=day, sessions=by_date[day]) for day in sorted(by_date.keys())]
 
 
 @router.get("/me/activity", response_model=schemas.ActivityOut)

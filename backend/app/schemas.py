@@ -132,3 +132,18 @@ class ActivityOut(BaseModel):
     days: List[ActivityDay] = []
     current_streak: int
     total_active_days: int
+
+
+class CalendarSession(BaseModel):
+    session_id: int
+    plan_id: int
+    syllabus_filename: str
+    topic_title: str
+    priority: PriorityLevel
+    allocated_hours: float
+    completed: bool
+
+
+class CalendarDay(BaseModel):
+    date: str
+    sessions: List[CalendarSession] = []
