@@ -4,12 +4,20 @@ import { api } from "../api";
 import { formatDuration } from "../utils/time";
 
 const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+const MAX_VISIBLE_CHIPS = 2;
 
 const PRIORITY_CLASS = {
   high: "high",
   medium: "medium",
   low: "low",
 };
+
+const LEGEND_ITEMS = [
+  { key: "high", label: "High priority", className: "high" },
+  { key: "medium", label: "Medium priority", className: "medium" },
+  { key: "low", label: "Low priority", className: "low" },
+  { key: "completed", label: "Completed", className: "completed" },
+];
 
 function dateKey(year, month, day) {
   const d = new Date(year, month, day);
@@ -24,11 +32,9 @@ function todayKey() {
   return dateKey(t.getFullYear(), t.getMonth(), t.getDate());
 }
 
-function sessionIntensity(count) {
-  if (!count) return 0;
-  if (count <= 2) return 1;
-  if (count <= 4) return 2;
-  return 3;
+function chipClass(session) {
+  if (session.completed) return "completed";
+  return PRIORITY_CLASS[session.priority] || "medium";
 }
 
 function buildMonthCells(year, month) {
@@ -75,6 +81,22 @@ function formatDisplayDate(dateStr) {
     day: "numeric",
     year: "numeric",
   });
+}
+
+function EventChip({ session, onSelectDate }) {
+  return (
+    <span
+      className={`calendar-event-chip ${chipClass(session)}`}
+      onClick={(e) => {
+        e.stopPropagation();
+        onSelectDate();
+      }}
+      role="presentation"
+    >
+      <span className="calendar-event-chip-title">{session.topic_title}</span>
+      <span className="calendar-event-chip-meta">{formatDuration(session.allocated_hours)}</span>
+    </span>
+  );
 }
 
 function CalendarIcon() {
@@ -156,6 +178,11 @@ export default function ActivityCalendar({ open, onClose }) {
     year: "numeric",
   });
 
+  const isViewingCurrentMonth = (() => {
+    const t = new Date();
+    return viewMonth.year === t.getFullYear() && viewMonth.month === t.getMonth();
+  })();
+
   function goPrevMonth() {
     setViewMonth((prev) => {
       if (prev.month === 0) return { year: prev.year - 1, month: 11 };
@@ -168,6 +195,15 @@ export default function ActivityCalendar({ open, onClose }) {
       if (prev.month === 11) return { year: prev.year + 1, month: 0 };
       return { year: prev.year, month: prev.month + 1 };
     });
+  }
+
+  function goToday() {
+    const t = new Date();
+    setViewMonth({ year: t.getFullYear(), month: t.getMonth() });
+  }
+
+  function selectDate(date) {
+    setSelectedDate(date);
   }
 
   function updateSessionCompleted(sessionId, completed) {
@@ -271,9 +307,19 @@ export default function ActivityCalendar({ open, onClose }) {
                 ←
               </button>
               <div className="calendar-month-label">{monthLabel}</div>
-              <button className="btn ghost" type="button" onClick={goNextMonth} aria-label="Next month">
-                →
-              </button>
+              <div className="calendar-nav-actions">
+                <button
+                  className="btn ghost calendar-today-btn"
+                  type="button"
+                  onClick={goToday}
+                  disabled={isViewingCurrentMonth}
+                >
+                  Today
+                </button>
+                <button className="btn ghost" type="button" onClick={goNextMonth} aria-label="Next month">
+                  →
+                </button>
+              </div>
             </div>
 
             <div className="month-calendar">
@@ -286,43 +332,66 @@ export default function ActivityCalendar({ open, onClose }) {
               </div>
               <div className="month-calendar-grid">
                 {monthCells.map((cell) => {
-                  const count = (sessionsByDate[cell.date] || []).length;
-                  const level = sessionIntensity(count);
+                  const sessions = sessionsByDate[cell.date] || [];
+                  const visible = sessions.slice(0, MAX_VISIBLE_CHIPS);
+                  const overflow = sessions.length - visible.length;
                   const isToday = cell.date === todayKey();
+
                   return (
                     <button
                       key={cell.date}
                       type="button"
                       className={[
                         "month-calendar-cell",
-                        `intensity-${level}`,
                         cell.inMonth ? "in-month" : "out-month",
                         isToday ? "is-today" : "",
-                        selectedDate === cell.date ? "is-selected" : "",
                       ]
                         .filter(Boolean)
                         .join(" ")}
-                      onClick={() => setSelectedDate(cell.date)}
+                      onClick={() => selectDate(cell.date)}
                       title={
-                        count
-                          ? `${cell.date}: ${count} scheduled session${count === 1 ? "" : "s"}`
+                        sessions.length
+                          ? `${cell.date}: ${sessions.length} scheduled session${sessions.length === 1 ? "" : "s"}`
                           : cell.date
                       }
                     >
-                      <span className="month-calendar-day-num">{cell.day}</span>
+                      <span className={`month-calendar-day-num${isToday ? " is-today-num" : ""}`}>
+                        {cell.day}
+                      </span>
+                      <div className="month-calendar-events">
+                        {visible.map((session) => (
+                          <EventChip
+                            key={session.session_id}
+                            session={session}
+                            onSelectDate={() => selectDate(cell.date)}
+                          />
+                        ))}
+                        {overflow > 0 && (
+                          <span
+                            className="calendar-event-more"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              selectDate(cell.date);
+                            }}
+                            role="presentation"
+                          >
+                            +{overflow} more
+                          </span>
+                        )}
+                      </div>
                     </button>
                   );
                 })}
               </div>
             </div>
 
-            <div className="activity-legend">
-              <span className="topic-meta">Less</span>
-              <div className="month-calendar-legend-swatch intensity-0" />
-              <div className="month-calendar-legend-swatch intensity-1" />
-              <div className="month-calendar-legend-swatch intensity-2" />
-              <div className="month-calendar-legend-swatch intensity-3" />
-              <span className="topic-meta">More</span>
+            <div className="calendar-priority-legend">
+              {LEGEND_ITEMS.map((item) => (
+                <span key={item.key} className="calendar-legend-item">
+                  <span className={`calendar-legend-swatch ${item.className}`} />
+                  {item.label}
+                </span>
+              ))}
             </div>
           </>
         )}
