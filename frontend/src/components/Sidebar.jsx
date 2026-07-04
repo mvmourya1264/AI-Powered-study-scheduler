@@ -1,4 +1,5 @@
-import { NavLink } from "react-router-dom";
+import { useEffect } from "react";
+import { NavLink, useLocation } from "react-router-dom";
 import { useLayout } from "../context/LayoutContext";
 
 function NavIcon({ children }) {
@@ -88,17 +89,32 @@ function SidebarIcon({ name }) {
   );
 }
 
-export default function Sidebar() {
-  const { openCalendar, showComingSoon, toast } = useLayout();
+function SidebarContent({ onNavigate }) {
+  const { openCalendar, showComingSoon } = useLayout();
+
+  function handleCalendar() {
+    openCalendar();
+    onNavigate?.();
+  }
+
+  function handleComingSoon() {
+    showComingSoon();
+    onNavigate?.();
+  }
 
   return (
-    <aside className="sidebar">
+    <>
       <div className="sidebar-brand">
         study<span className="brand-mark">.</span>plan
       </div>
 
       <nav className="sidebar-nav">
-        <NavLink to="/dashboard" className={({ isActive }) => `sidebar-nav-item${isActive ? " active" : ""}`} end>
+        <NavLink
+          to="/dashboard"
+          end
+          className={({ isActive }) => `sidebar-nav-item${isActive ? " active" : ""}`}
+          onClick={onNavigate}
+        >
           <NavIcon><SidebarIcon name="dashboard" /></NavIcon>
           Dashboard
         </NavLink>
@@ -106,22 +122,28 @@ export default function Sidebar() {
           to="/schedule"
           end={false}
           className={({ isActive }) => `sidebar-nav-item${isActive ? " active" : ""}`}
+          onClick={onNavigate}
         >
           <NavIcon><SidebarIcon name="schedule" /></NavIcon>
           Schedule
         </NavLink>
-        <button type="button" className="sidebar-nav-item" onClick={openCalendar}>
+        <button type="button" className="sidebar-nav-item" onClick={handleCalendar}>
           <NavIcon><SidebarIcon name="calendar" /></NavIcon>
           Calendar
         </button>
         <NavLink
           to="/pomodoro"
           className={({ isActive }) => `sidebar-nav-item${isActive ? " active" : ""}`}
+          onClick={onNavigate}
         >
           <NavIcon><SidebarIcon name="pomodoro" /></NavIcon>
           Pomodoro
         </NavLink>
-        <NavLink to="/profile" className={({ isActive }) => `sidebar-nav-item${isActive ? " active" : ""}`}>
+        <NavLink
+          to="/profile"
+          className={({ isActive }) => `sidebar-nav-item${isActive ? " active" : ""}`}
+          onClick={onNavigate}
+        >
           <NavIcon><SidebarIcon name="profile" /></NavIcon>
           Profile
         </NavLink>
@@ -135,7 +157,7 @@ export default function Sidebar() {
             key={item.label}
             type="button"
             className="sidebar-nav-item disabled"
-            onClick={showComingSoon}
+            onClick={handleComingSoon}
           >
             <NavIcon><SidebarIcon name={item.icon} /></NavIcon>
             <span className="sidebar-nav-label">{item.label}</span>
@@ -143,8 +165,48 @@ export default function Sidebar() {
           </button>
         ))}
       </nav>
+    </>
+  );
+}
+
+export default function Sidebar({ open = false, onClose }) {
+  const { toast } = useLayout();
+  const location = useLocation();
+
+  useEffect(() => {
+    onClose?.();
+  }, [location.pathname]);
+
+  useEffect(() => {
+    if (!open) return undefined;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, [open]);
+
+  return (
+    <>
+      <aside className="sidebar sidebar-desktop" aria-label="Main navigation">
+        <SidebarContent />
+      </aside>
+
+      <aside
+        className={`sidebar sidebar-drawer${open ? " open" : ""}`}
+        aria-label="Mobile navigation"
+        aria-hidden={!open}
+      >
+        <div className="sidebar-drawer-header">
+          <div className="sidebar-brand">Menu</div>
+          <button type="button" className="btn ghost sidebar-drawer-close" onClick={onClose} aria-label="Close menu">
+            ✕
+          </button>
+        </div>
+        <SidebarContent onNavigate={onClose} />
+      </aside>
 
       {toast && <div className="sidebar-toast">{toast}</div>}
-    </aside>
+    </>
   );
 }

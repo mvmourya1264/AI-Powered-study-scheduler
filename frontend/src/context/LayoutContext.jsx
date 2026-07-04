@@ -2,7 +2,7 @@ import { createContext, useContext, useState } from "react";
 
 const LayoutContext = createContext(null);
 
-export function LayoutProvider({ children, openCalendar }) {
+export function LayoutProvider({ children, openCalendar, closeMobileNav }) {
   const [toast, setToast] = useState("");
 
   function showComingSoon() {
@@ -10,8 +10,15 @@ export function LayoutProvider({ children, openCalendar }) {
     setTimeout(() => setToast(""), 2000);
   }
 
+  function openCalendarAndCloseNav() {
+    closeMobileNav?.();
+    openCalendar();
+  }
+
   return (
-    <LayoutContext.Provider value={{ openCalendar, showComingSoon, toast }}>
+    <LayoutContext.Provider
+      value={{ openCalendar: openCalendarAndCloseNav, showComingSoon, toast, closeMobileNav }}
+    >
       {children}
     </LayoutContext.Provider>
   );

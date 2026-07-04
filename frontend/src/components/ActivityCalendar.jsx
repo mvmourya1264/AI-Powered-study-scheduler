@@ -99,6 +99,15 @@ function EventChip({ session, onSelectDate }) {
   );
 }
 
+function EventDot({ session }) {
+  return (
+    <span
+      className={`calendar-event-dot ${chipClass(session)}`}
+      aria-hidden="true"
+    />
+  );
+}
+
 function CalendarIcon() {
   return (
     <svg
@@ -358,7 +367,7 @@ export default function ActivityCalendar({ open, onClose }) {
                       <span className={`month-calendar-day-num${isToday ? " is-today-num" : ""}`}>
                         {cell.day}
                       </span>
-                      <div className="month-calendar-events">
+                      <div className="month-calendar-events month-calendar-events-chips">
                         {visible.map((session) => (
                           <EventChip
                             key={session.session_id}
@@ -377,6 +386,14 @@ export default function ActivityCalendar({ open, onClose }) {
                           >
                             +{overflow} more
                           </span>
+                        )}
+                      </div>
+                      <div className="month-calendar-events month-calendar-events-dots">
+                        {sessions.slice(0, 4).map((session) => (
+                          <EventDot key={session.session_id} session={session} />
+                        ))}
+                        {sessions.length > 4 && (
+                          <span className="calendar-event-dot-more">+{sessions.length - 4}</span>
                         )}
                       </div>
                     </button>

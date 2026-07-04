@@ -30,7 +30,7 @@ export default function Auth() {
   }
 
   return (
-    <div className="main" style={{ maxWidth: 420, paddingTop: 90 }}>
+    <div className="main auth-page">
       <div className="eyebrow">Study Scheduler</div>
       <h1>{mode === "login" ? "Welcome back" : "Create your account"}</h1>
       <p>
