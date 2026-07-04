@@ -27,6 +27,13 @@ function iconPaths(name) {
     case "schedule":
       return (
         <>
+          <path d="M5 4h14v16H5z" />
+          <path d="M8 8h8M8 12h8M8 16h5" />
+        </>
+      );
+    case "calendar":
+      return (
+        <>
           <rect x="3" y="5" width="18" height="16" rx="2" />
           <path d="M8 3v4M16 3v4M3 10h18" />
         </>
@@ -96,9 +103,17 @@ export default function Sidebar() {
           <NavIcon><SidebarIcon name="dashboard" /></NavIcon>
           Dashboard
         </NavLink>
-        <button type="button" className="sidebar-nav-item" onClick={openCalendar}>
+        <NavLink
+          to="/schedule"
+          end={false}
+          className={({ isActive }) => `sidebar-nav-item${isActive ? " active" : ""}`}
+        >
           <NavIcon><SidebarIcon name="schedule" /></NavIcon>
           Schedule
+        </NavLink>
+        <button type="button" className="sidebar-nav-item" onClick={openCalendar}>
+          <NavIcon><SidebarIcon name="calendar" /></NavIcon>
+          Calendar
         </button>
         <NavLink to="/profile" className={({ isActive }) => `sidebar-nav-item${isActive ? " active" : ""}`}>
           <NavIcon><SidebarIcon name="profile" /></NavIcon>

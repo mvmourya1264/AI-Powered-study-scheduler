@@ -2,6 +2,7 @@ import { Navigate, Route, Routes } from "react-router-dom";
 import "./styles.css";
 import Auth from "./components/Auth";
 import Dashboard from "./components/Dashboard";
+import ScheduleList from "./components/ScheduleList";
 import TopicsReview from "./components/TopicsReview";
 import ScheduleView from "./components/ScheduleView";
 import Profile from "./components/Profile";
@@ -32,8 +33,9 @@ export default function App() {
       >
         <Route index element={<Navigate to="/dashboard" replace />} />
         <Route path="dashboard" element={<Dashboard />} />
-        <Route path="topics/:syllabusId" element={<TopicsReview />} />
+        <Route path="schedule" element={<ScheduleList />} />
         <Route path="schedule/:planId" element={<ScheduleView />} />
+        <Route path="topics/:syllabusId" element={<TopicsReview />} />
         <Route path="profile" element={<Profile />} />
       </Route>
       <Route path="*" element={<Navigate to="/dashboard" replace />} />

@@ -1,8 +1,6 @@
-import { useEffect, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useEffect, useState } from "react";
 import { api } from "../api";
 import { formatDuration } from "../utils/time";
-import { useAppData } from "../context/AppDataContext";
 
 const PRIORITY_CLASS = { high: "high", medium: "medium", low: "low" };
 const CHART_COLORS = ["var(--high)", "var(--medium)", "var(--low)", "var(--focus-ring)", "#8B7355"];
@@ -149,17 +147,9 @@ function SubjectDonutChart({ subjects }) {
 }
 
 export default function Dashboard() {
-  const navigate = useNavigate();
-  const { syllabi, plansBySyllabus, loading: syllabiLoading, addSyllabus, deleteSyllabus } =
-    useAppData();
   const [dashboard, setDashboard] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [uploading, setUploading] = useState(false);
-  const [dragActive, setDragActive] = useState(false);
-  const [uploadError, setUploadError] = useState("");
-  const [deletingId, setDeletingId] = useState(null);
-  const fileInput = useRef(null);
 
   useEffect(() => {
     loadDashboard();
@@ -248,46 +238,6 @@ export default function Dashboard() {
     }
   }
 
-  async function handleFile(file) {
-    if (!file) return;
-    if (!file.name.toLowerCase().endsWith(".pdf")) {
-      setUploadError("Please upload a PDF file.");
-      return;
-    }
-    setUploadError("");
-    setUploading(true);
-    try {
-      const res = await api.uploadSyllabus(file);
-      addSyllabus(res.data);
-      navigate(`/topics/${res.data.id}`);
-    } catch (err) {
-      setUploadError(err?.response?.data?.detail || "Upload failed. Try another file.");
-    } finally {
-      setUploading(false);
-    }
-  }
-
-  function handleSelectSyllabus(syllabusId) {
-    const plan = plansBySyllabus[syllabusId];
-    if (plan?.id) navigate(`/schedule/${plan.id}`);
-    else navigate(`/topics/${syllabusId}`);
-  }
-
-  async function handleDelete(id, e) {
-    e.stopPropagation();
-    if (!confirm("Delete this syllabus and its schedules?")) return;
-    setUploadError("");
-    setDeletingId(id);
-    try {
-      await deleteSyllabus(id);
-      await loadDashboard();
-    } catch (err) {
-      setUploadError(err?.response?.data?.detail || "Could not delete syllabus.");
-    } finally {
-      setDeletingId(null);
-    }
-  }
-
   const goalProgress =
     dashboard && dashboard.daily_goal_hours > 0
       ? Math.min(100, (dashboard.today.total_hours_completed / dashboard.daily_goal_hours) * 100)
@@ -348,127 +298,49 @@ export default function Dashboard() {
             </div>
           </div>
 
-          <div className="card dashboard-panel">
-            <h3>Today&apos;s schedule</h3>
-            {dashboard.today.sessions.length === 0 ? (
-              <p style={{ fontSize: 14, marginBottom: 0 }}>Nothing scheduled for today.</p>
-            ) : (
-              <div className="dashboard-schedule-list">
-                {dashboard.today.sessions.map((session) => (
-                  <div className="dashboard-schedule-row" key={session.session_id}>
-                    <span className="dashboard-schedule-time">
-                      {session.start_time} – {session.end_time}
-                    </span>
-                    <label className={`session-line${session.completed ? " completed" : ""}`}>
-                      <input
-                        type="checkbox"
-                        checked={session.completed}
-                        onChange={() => toggleSession(session)}
-                      />
-                      <span className={`priority-dot ${PRIORITY_CLASS[session.priority]}`} />
-                      <span className="session-title">{session.topic_title}</span>
-                    </label>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-
-          <div className="dashboard-charts">
-            <div className="card dashboard-panel">
-              <h3>Study overview</h3>
-              <p className="topic-meta" style={{ marginTop: 0 }}>
-                Hours completed — last 7 days
-              </p>
-              <WeeklyBarChart data={dashboard.weekly_study_hours} />
+          <div className="dashboard-content-row">
+            <div className="card dashboard-panel dashboard-schedule-panel">
+              <h3>Today&apos;s schedule</h3>
+              {dashboard.today.sessions.length === 0 ? (
+                <p style={{ fontSize: 14, marginBottom: 0 }}>Nothing scheduled for today.</p>
+              ) : (
+                <div className="dashboard-schedule-list">
+                  {dashboard.today.sessions.map((session) => (
+                    <div className="dashboard-schedule-row" key={session.session_id}>
+                      <span className="dashboard-schedule-time">
+                        {session.start_time} – {session.end_time}
+                      </span>
+                      <label className={`session-line${session.completed ? " completed" : ""}`}>
+                        <input
+                          type="checkbox"
+                          checked={session.completed}
+                          onChange={() => toggleSession(session)}
+                        />
+                        <span className={`priority-dot ${PRIORITY_CLASS[session.priority]}`} />
+                        <span className="session-title">{session.topic_title}</span>
+                      </label>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
-            <div className="card dashboard-panel">
-              <h3>Subject progress</h3>
-              <SubjectDonutChart subjects={dashboard.subject_progress} />
+
+            <div className="dashboard-charts">
+              <div className="card dashboard-panel">
+                <h3>Study overview</h3>
+                <p className="topic-meta" style={{ marginTop: 0 }}>
+                  Hours completed — last 7 days
+                </p>
+                <WeeklyBarChart data={dashboard.weekly_study_hours} />
+              </div>
+              <div className="card dashboard-panel">
+                <h3>Subject progress</h3>
+                <SubjectDonutChart subjects={dashboard.subject_progress} />
+              </div>
             </div>
           </div>
         </>
       ) : null}
-
-      <div className="card dashboard-upload" style={{ marginTop: 24 }}>
-        <h3>Upload a syllabus</h3>
-        <p style={{ marginTop: 0 }}>
-          Drop in a PDF with your exam syllabus to generate a new study plan.
-        </p>
-        <div
-          className={`dropzone${dragActive ? " active" : ""}`}
-          onDragOver={(e) => {
-            e.preventDefault();
-            setDragActive(true);
-          }}
-          onDragLeave={() => setDragActive(false)}
-          onDrop={(e) => {
-            e.preventDefault();
-            setDragActive(false);
-            handleFile(e.dataTransfer.files?.[0]);
-          }}
-          onClick={() => fileInput.current?.click()}
-          style={{ cursor: "pointer" }}
-        >
-          <input
-            ref={fileInput}
-            type="file"
-            accept="application/pdf"
-            hidden
-            onChange={(e) => handleFile(e.target.files?.[0])}
-          />
-          {uploading ? (
-            <span className="spinner" />
-          ) : (
-            <>
-              <div style={{ fontWeight: 500, marginBottom: 4 }}>Drop your syllabus PDF here</div>
-              <div style={{ fontSize: 13, color: "var(--ink-soft)" }}>or click to browse</div>
-            </>
-          )}
-        </div>
-        {uploadError && <div className="error-msg" style={{ marginTop: 12 }}>{uploadError}</div>}
-
-        {syllabi.length > 0 && (
-          <>
-            <h4 style={{ marginTop: 24, marginBottom: 12 }}>Your syllabi</h4>
-            {syllabiLoading ? (
-              <span className="spinner" />
-            ) : (
-              <div className="syllabus-list">
-                {syllabi.map((s) => {
-                  const plan = plansBySyllabus[s.id];
-                  return (
-                    <div
-                      key={s.id}
-                      className="syllabus-item"
-                      onClick={() => handleSelectSyllabus(s.id)}
-                      style={{ cursor: "pointer" }}
-                    >
-                      <div>
-                        <div style={{ fontWeight: 500 }}>{s.filename}</div>
-                        <div className="topic-meta">
-                          {s.topics.length} topics ·{" "}
-                          {new Date(s.uploaded_at).toLocaleDateString()}
-                        </div>
-                        <span className={`syllabus-action${plan ? " has-plan" : ""}`}>
-                          {plan ? "View schedule" : "Set up schedule"}
-                        </span>
-                      </div>
-                      <button
-                        className="btn danger"
-                        disabled={deletingId === s.id}
-                        onClick={(e) => handleDelete(s.id, e)}
-                      >
-                        {deletingId === s.id ? <span className="spinner" /> : "Delete"}
-                      </button>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </>
-        )}
-      </div>
     </div>
   );
 }

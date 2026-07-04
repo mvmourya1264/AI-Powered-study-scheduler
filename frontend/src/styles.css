@@ -305,11 +305,21 @@ button {
   color: var(--ink-soft);
 }
 
-.dashboard-charts {
+.dashboard-content-row {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: minmax(0, 1.45fr) minmax(0, 1fr);
   gap: 20px;
-  margin-top: 20px;
+  align-items: start;
+}
+
+.dashboard-schedule-panel {
+  min-height: 100%;
+}
+
+.dashboard-charts {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
 }
 
 .weekly-chart-bars {
@@ -351,8 +361,8 @@ button {
 
 .donut-chart-wrap {
   display: flex;
-  flex-wrap: wrap;
-  gap: 20px;
+  flex-direction: column;
+  gap: 16px;
   align-items: center;
 }
 
@@ -626,6 +636,84 @@ input[type="text"], input[type="email"], input[type="password"], input[type="num
   color: var(--focus-ring);
 }
 
+/* --- Schedule bookshelf --- */
+
+.schedule-upload-card {
+  margin-top: 8px;
+}
+
+.bookshelf {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  align-items: flex-end;
+}
+
+.book-spine {
+  width: 128px;
+  min-height: 210px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 14px 12px 12px;
+  border: 1px solid;
+  border-left-width: 5px;
+  border-radius: 4px 10px 10px 4px;
+  box-shadow: 2px 4px 12px rgba(36, 48, 63, 0.08);
+  cursor: pointer;
+  transition: transform 0.12s ease, box-shadow 0.12s ease;
+}
+
+.book-spine:hover {
+  transform: translateY(-4px);
+  box-shadow: 2px 8px 18px rgba(36, 48, 63, 0.12);
+}
+
+.book-spine-top {
+  flex: 1;
+  border-bottom: 1px solid;
+  padding-bottom: 12px;
+  margin-bottom: 12px;
+}
+
+.book-spine-title {
+  font-family: var(--font-display);
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.3;
+  margin: 0 0 10px;
+  word-break: break-word;
+}
+
+.book-spine-meta {
+  font-size: 11px;
+  line-height: 1.5;
+  color: var(--ink-soft);
+  margin: 0;
+}
+
+.book-spine-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.book-spine-link {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--ink-soft);
+}
+
+.book-spine-link.has-plan {
+  color: var(--focus-ring);
+}
+
+.book-spine-delete {
+  font-size: 11px;
+  padding: 5px 8px;
+  align-self: flex-start;
+}
+
 /* --- Schedule / day rail (signature element) --- */
 
 .plan-summary {
@@ -872,8 +960,11 @@ input[type="text"], input[type="email"], input[type="password"], input[type="num
     justify-content: center;
     padding: 10px;
   }
-  .dashboard-charts {
+  .dashboard-content-row {
     grid-template-columns: 1fr;
+  }
+  .dashboard-charts {
+    flex-direction: column;
   }
   .dashboard-schedule-row {
     grid-template-columns: 1fr;
