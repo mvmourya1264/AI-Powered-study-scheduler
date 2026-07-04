@@ -90,7 +90,7 @@ export default function TopicsReview() {
       <div className="eyebrow">{syllabus.filename}</div>
       <h1>Review priorities</h1>
       <p>
-        We picked up priority/marks where the PDF stated them. Adjust any topic below, or add ones
+        We picked up priority/marks where the syllabus stated them. Adjust any topic below, or add ones
         we missed, before generating your day-by-day plan.
       </p>
 

@@ -57,8 +57,11 @@ def main() -> None:
     headers = {"Authorization": f"Bearer {login.json()['access_token']}"}
 
     with patch(
-        "app.routers.syllabus.parse_pdf",
-        return_value=("Algebra\nGeometry\nCalculus", SAMPLE_TOPICS),
+        "app.routers.syllabus.extract_topics_with_gemini",
+        return_value=SAMPLE_TOPICS,
+    ), patch(
+        "app.routers.syllabus.extract_text",
+        return_value="Algebra\nGeometry\nCalculus",
     ):
         upload = client.post(
             "/syllabus/upload",
@@ -130,8 +133,11 @@ def main() -> None:
     assert progress_after_plan.json()["total_plans"] == 0
 
     with patch(
-        "app.routers.syllabus.parse_pdf",
-        return_value=("Algebra\nGeometry\nCalculus", SAMPLE_TOPICS),
+        "app.routers.syllabus.extract_topics_with_gemini",
+        return_value=SAMPLE_TOPICS,
+    ), patch(
+        "app.routers.syllabus.extract_text",
+        return_value="Algebra\nGeometry\nCalculus",
     ):
         upload2 = client.post(
             "/syllabus/upload",

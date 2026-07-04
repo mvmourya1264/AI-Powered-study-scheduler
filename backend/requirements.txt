@@ -9,3 +9,4 @@ pdfplumber==0.11.10
 aiosqlite==0.22.1
 psycopg2-binary==2.9.10
 python-dotenv==1.2.2
+google-genai>=1.30.0

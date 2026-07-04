@@ -9,6 +9,16 @@ const BOOK_STYLES = [
   { bg: "var(--low-tint)", border: "var(--low)", accent: "var(--low)" },
 ];
 
+const SYLLABUS_ACCEPT =
+  "application/pdf,image/jpeg,image/png,image/webp,.pdf,.jpg,.jpeg,.png,.webp";
+
+const SYLLABUS_EXTENSIONS = [".pdf", ".jpg", ".jpeg", ".png", ".webp"];
+
+function isSupportedSyllabusFile(file) {
+  const name = file.name.toLowerCase();
+  return SYLLABUS_EXTENSIONS.some((ext) => name.endsWith(ext));
+}
+
 function truncateFilename(name, max = 28) {
   if (name.length <= max) return name;
   const ext = name.includes(".") ? name.slice(name.lastIndexOf(".")) : "";
@@ -33,8 +43,8 @@ export default function ScheduleList() {
 
   async function handleFile(file) {
     if (!file) return;
-    if (!file.name.toLowerCase().endsWith(".pdf")) {
-      setError("Please upload a PDF file.");
+    if (!isSupportedSyllabusFile(file)) {
+      setError("Please upload a PDF or image (JPEG, PNG, or WEBP).");
       return;
     }
     setError("");
@@ -73,7 +83,7 @@ export default function ScheduleList() {
       <div className="card schedule-upload-card">
         <h3>Upload a syllabus</h3>
         <p className="topic-meta" style={{ marginTop: 0 }}>
-          Drop in a PDF with your exam syllabus to generate a new study plan.
+          Drop in a PDF or photo of your exam syllabus to generate a new study plan.
         </p>
         <div
           className={`dropzone${dragActive ? " active" : ""}`}
@@ -93,16 +103,25 @@ export default function ScheduleList() {
           <input
             ref={fileInput}
             type="file"
-            accept="application/pdf"
+            accept={SYLLABUS_ACCEPT}
             hidden
             onChange={(e) => handleFile(e.target.files?.[0])}
           />
           {uploading ? (
-            <span className="spinner" />
+            <>
+              <span className="spinner" />
+              <div style={{ fontSize: 13, color: "var(--ink-soft)", marginTop: 10 }}>
+                Extracting topics — this may take a few seconds…
+              </div>
+            </>
           ) : (
             <>
-              <div style={{ fontWeight: 500, marginBottom: 4 }}>Drop your syllabus PDF here</div>
-              <div style={{ fontSize: 13, color: "var(--ink-soft)" }}>or click to browse</div>
+              <div style={{ fontWeight: 500, marginBottom: 4 }}>
+                Drop your syllabus PDF or photo here
+              </div>
+              <div style={{ fontSize: 13, color: "var(--ink-soft)" }}>
+                PDF, JPEG, PNG, or WEBP — or click to browse
+              </div>
             </>
           )}
         </div>

@@ -28,6 +28,7 @@ export const api = {
     form.append("file", file);
     return client.post("/syllabus/upload", form, {
       headers: { "Content-Type": "multipart/form-data" },
+      timeout: 120000,
     });
   },
 

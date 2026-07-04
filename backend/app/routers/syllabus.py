@@ -6,9 +6,31 @@ from sqlalchemy.orm import Session, joinedload
 from .. import models, schemas
 from ..auth import get_current_user
 from ..database import get_db
-from ..pdf_parser import parse_pdf
+from ..gemini_extractor import (
+    GeminiExtractionError,
+    GeminiNotConfiguredError,
+    extract_topics_with_gemini,
+)
+from ..pdf_parser import ParsedTopic, extract_text, parse_pdf, parse_syllabus_text
 
 router = APIRouter(prefix="/syllabus", tags=["syllabus"])
+
+ALLOWED_SUFFIXES = {".pdf", ".jpg", ".jpeg", ".png", ".webp"}
+
+MIME_BY_SUFFIX = {
+    ".pdf": "application/pdf",
+    ".jpg": "image/jpeg",
+    ".jpeg": "image/jpeg",
+    ".png": "image/png",
+    ".webp": "image/webp",
+}
+
+
+def _file_suffix(filename: str) -> str:
+    dot = filename.rfind(".")
+    if dot == -1:
+        return ""
+    return filename[dot:].lower()
 
 
 def _get_owned_syllabus(db: Session, syllabus_id: int, user: models.User) -> models.Syllabus:
@@ -22,21 +44,73 @@ def _get_owned_syllabus(db: Session, syllabus_id: int, user: models.User) -> mod
     return syllabus
 
 
+def _extract_topics_from_upload(
+    contents: bytes, mime_type: str, *, is_pdf: bool
+) -> tuple[str, list[ParsedTopic]]:
+    raw_text = ""
+    if is_pdf:
+        try:
+            raw_text = extract_text(contents)
+        except Exception:
+            raw_text = ""
+
+    try:
+        topics = extract_topics_with_gemini(contents, mime_type)
+        return raw_text, topics
+    except GeminiNotConfiguredError:
+        if not is_pdf:
+            raise HTTPException(
+                status_code=502,
+                detail=(
+                    "Image syllabus extraction requires the Gemini API. "
+                    "Set GEMINI_API_KEY in your environment and restart the backend."
+                ),
+            ) from None
+    except GeminiExtractionError as exc:
+        if not is_pdf:
+            raise HTTPException(
+                status_code=502,
+                detail=(
+                    f"Could not extract topics from the image: {exc}. "
+                    "Ensure GEMINI_API_KEY is valid and the photo is a readable syllabus."
+                ),
+            ) from None
+
+    if is_pdf:
+        if raw_text:
+            return raw_text, parse_syllabus_text(raw_text)
+        fallback_raw, fallback_topics = parse_pdf(contents)
+        return fallback_raw, fallback_topics
+
+    raise HTTPException(status_code=502, detail="Topic extraction failed.")
+
+
 @router.post("/upload", response_model=schemas.SyllabusOut)
 async def upload_syllabus(
     file: UploadFile = File(...),
     db: Session = Depends(get_db),
     user: models.User = Depends(get_current_user),
 ):
-    if not file.filename.lower().endswith(".pdf"):
-        raise HTTPException(status_code=400, detail="Only PDF files are supported")
+    filename = file.filename or "upload"
+    suffix = _file_suffix(filename)
+    if suffix not in ALLOWED_SUFFIXES:
+        raise HTTPException(
+            status_code=400,
+            detail="Supported formats: PDF, JPEG, PNG, and WEBP.",
+        )
 
     contents = await file.read()
-    raw_text, parsed_topics = parse_pdf(contents)
+    if not contents:
+        raise HTTPException(status_code=400, detail="Uploaded file is empty.")
 
-    syllabus = models.Syllabus(user_id=user.id, filename=file.filename, raw_text=raw_text)
+    mime_type = MIME_BY_SUFFIX[suffix]
+    is_pdf = suffix == ".pdf"
+
+    raw_text, parsed_topics = _extract_topics_from_upload(contents, mime_type, is_pdf=is_pdf)
+
+    syllabus = models.Syllabus(user_id=user.id, filename=filename, raw_text=raw_text or None)
     db.add(syllabus)
-    db.flush()  # get syllabus.id before adding topics
+    db.flush()
 
     for pt in parsed_topics:
         db.add(
