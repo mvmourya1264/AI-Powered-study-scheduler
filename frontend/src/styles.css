@@ -307,19 +307,141 @@ button {
 
 .dashboard-content-row {
   display: grid;
-  grid-template-columns: minmax(0, 1.45fr) minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.72fr) minmax(0, 1fr);
   gap: 20px;
   align-items: start;
+}
+
+.dashboard-col-charts {
+  order: 1;
+}
+
+.dashboard-col-pomodoro {
+  order: 2;
+}
+
+.dashboard-col-schedule {
+  order: 3;
 }
 
 .dashboard-schedule-panel {
   min-height: 100%;
 }
 
+.dashboard-see-full {
+  margin-top: 12px;
+  padding-left: 0;
+  font-size: 13px;
+  font-weight: 500;
+}
+
 .dashboard-charts {
   display: flex;
   flex-direction: column;
   gap: 20px;
+}
+
+.pomodoro-panel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.pomodoro-timer {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  position: relative;
+}
+
+.pomodoro-timer h3 {
+  align-self: flex-start;
+  margin-bottom: 8px;
+}
+
+.pomodoro-timer.pomodoro-flash .pomodoro-ring-progress {
+  stroke: var(--low);
+  transition: stroke 0.2s ease;
+}
+
+.pomodoro-modes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  justify-content: center;
+  margin-bottom: 16px;
+}
+
+.pomodoro-mode-btn {
+  font-size: 11px;
+  padding: 6px 8px;
+}
+
+.pomodoro-mode-btn.active {
+  background: var(--medium-tint);
+  color: var(--ink);
+  border-radius: 4px;
+}
+
+.pomodoro-ring-wrap {
+  position: relative;
+  width: 200px;
+  height: 200px;
+  margin-bottom: 16px;
+}
+
+.pomodoro-ring {
+  display: block;
+}
+
+.pomodoro-ring-track {
+  fill: none;
+  stroke: var(--rule);
+}
+
+.pomodoro-ring-progress {
+  fill: none;
+  stroke: var(--high);
+  stroke-linecap: round;
+  transition: stroke-dashoffset 0.3s linear;
+}
+
+.pomodoro-time {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-display);
+  font-size: 36px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.pomodoro-controls {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.pomodoro-sessions {
+  margin: 0;
+}
+
+.pomodoro-toast {
+  position: absolute;
+  bottom: -8px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--ink);
+  color: var(--paper-raised);
+  padding: 8px 14px;
+  border-radius: 6px;
+  font-size: 12px;
+  white-space: nowrap;
+  z-index: 2;
 }
 
 .weekly-chart-bars {
@@ -962,6 +1084,15 @@ input[type="text"], input[type="email"], input[type="password"], input[type="num
   }
   .dashboard-content-row {
     grid-template-columns: 1fr;
+  }
+  .dashboard-col-schedule {
+    order: 1;
+  }
+  .dashboard-col-pomodoro {
+    order: 2;
+  }
+  .dashboard-col-charts {
+    order: 3;
   }
   .dashboard-charts {
     flex-direction: column;

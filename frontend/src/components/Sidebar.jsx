@@ -12,7 +12,6 @@ function NavIcon({ children }) {
 const COMING_SOON = [
   { label: "Subjects", icon: "subjects" },
   { label: "Tasks", icon: "tasks" },
-  { label: "Pomodoro", icon: "pomodoro" },
   { label: "Notes", icon: "notes" },
   { label: "Goals", icon: "goals" },
   { label: "Habit Tracker", icon: "habit" },
@@ -115,6 +114,13 @@ export default function Sidebar() {
           <NavIcon><SidebarIcon name="calendar" /></NavIcon>
           Calendar
         </button>
+        <NavLink
+          to="/dashboard#pomodoro"
+          className={({ isActive }) => `sidebar-nav-item${isActive ? " active" : ""}`}
+        >
+          <NavIcon><SidebarIcon name="pomodoro" /></NavIcon>
+          Pomodoro
+        </NavLink>
         <NavLink to="/profile" className={({ isActive }) => `sidebar-nav-item${isActive ? " active" : ""}`}>
           <NavIcon><SidebarIcon name="profile" /></NavIcon>
           Profile

@@ -1,9 +1,12 @@
 import { useEffect, useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import { api } from "../api";
 import { formatDuration } from "../utils/time";
+import PomodoroTimer from "./PomodoroTimer";
 
 const PRIORITY_CLASS = { high: "high", medium: "medium", low: "low" };
 const CHART_COLORS = ["var(--high)", "var(--medium)", "var(--low)", "var(--focus-ring)", "#8B7355"];
+const SCHEDULE_PREVIEW_LIMIT = 6;
 
 function formatApiError(err, label = "Request") {
   const status = err?.response?.status;
@@ -38,6 +41,16 @@ function hoursBetween(start, end) {
   const [sh, sm] = start.split(":").map(Number);
   const [eh, em] = end.split(":").map(Number);
   return (eh * 60 + em - (sh * 60 + sm)) / 60;
+}
+
+function fullSchedulePath(sessions) {
+  if (!sessions.length) return "/schedule";
+  const counts = {};
+  for (const session of sessions) {
+    counts[session.plan_id] = (counts[session.plan_id] || 0) + 1;
+  }
+  const topPlanId = Object.entries(counts).sort((a, b) => b[1] - a[1])[0][0];
+  return `/schedule/${topPlanId}`;
 }
 
 function WeeklyBarChart({ data }) {
@@ -147,6 +160,8 @@ function SubjectDonutChart({ subjects }) {
 }
 
 export default function Dashboard() {
+  const navigate = useNavigate();
+  const location = useLocation();
   const [dashboard, setDashboard] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -154,6 +169,11 @@ export default function Dashboard() {
   useEffect(() => {
     loadDashboard();
   }, []);
+
+  useEffect(() => {
+    if (loading || location.hash !== "#pomodoro") return;
+    document.getElementById("pomodoro")?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }, [loading, location.hash]);
 
   async function loadDashboard() {
     setLoading(true);
@@ -243,6 +263,10 @@ export default function Dashboard() {
       ? Math.min(100, (dashboard.today.total_hours_completed / dashboard.daily_goal_hours) * 100)
       : 0;
 
+  const todaySessions = dashboard?.today.sessions ?? [];
+  const previewSessions = todaySessions.slice(0, SCHEDULE_PREVIEW_LIMIT);
+  const hasMoreSessions = todaySessions.length > SCHEDULE_PREVIEW_LIMIT;
+
   return (
     <div className="main dashboard-main">
       {loading ? (
@@ -299,33 +323,7 @@ export default function Dashboard() {
           </div>
 
           <div className="dashboard-content-row">
-            <div className="card dashboard-panel dashboard-schedule-panel">
-              <h3>Today&apos;s schedule</h3>
-              {dashboard.today.sessions.length === 0 ? (
-                <p style={{ fontSize: 14, marginBottom: 0 }}>Nothing scheduled for today.</p>
-              ) : (
-                <div className="dashboard-schedule-list">
-                  {dashboard.today.sessions.map((session) => (
-                    <div className="dashboard-schedule-row" key={session.session_id}>
-                      <span className="dashboard-schedule-time">
-                        {session.start_time} – {session.end_time}
-                      </span>
-                      <label className={`session-line${session.completed ? " completed" : ""}`}>
-                        <input
-                          type="checkbox"
-                          checked={session.completed}
-                          onChange={() => toggleSession(session)}
-                        />
-                        <span className={`priority-dot ${PRIORITY_CLASS[session.priority]}`} />
-                        <span className="session-title">{session.topic_title}</span>
-                      </label>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            <div className="dashboard-charts">
+            <div className="dashboard-col-charts dashboard-charts">
               <div className="card dashboard-panel">
                 <h3>Study overview</h3>
                 <p className="topic-meta" style={{ marginTop: 0 }}>
@@ -337,6 +335,49 @@ export default function Dashboard() {
                 <h3>Subject progress</h3>
                 <SubjectDonutChart subjects={dashboard.subject_progress} />
               </div>
+            </div>
+
+            <div className="dashboard-col-pomodoro" id="pomodoro">
+              <div className="card dashboard-panel pomodoro-panel">
+                <PomodoroTimer />
+              </div>
+            </div>
+
+            <div className="card dashboard-panel dashboard-schedule-panel dashboard-col-schedule">
+              <h3>Today&apos;s schedule</h3>
+              {todaySessions.length === 0 ? (
+                <p style={{ fontSize: 14, marginBottom: 0 }}>Nothing scheduled for today.</p>
+              ) : (
+                <>
+                  <div className="dashboard-schedule-list">
+                    {previewSessions.map((session) => (
+                      <div className="dashboard-schedule-row" key={session.session_id}>
+                        <span className="dashboard-schedule-time">
+                          {session.start_time} – {session.end_time}
+                        </span>
+                        <label className={`session-line${session.completed ? " completed" : ""}`}>
+                          <input
+                            type="checkbox"
+                            checked={session.completed}
+                            onChange={() => toggleSession(session)}
+                          />
+                          <span className={`priority-dot ${PRIORITY_CLASS[session.priority]}`} />
+                          <span className="session-title">{session.topic_title}</span>
+                        </label>
+                      </div>
+                    ))}
+                  </div>
+                  {hasMoreSessions && (
+                    <button
+                      type="button"
+                      className="btn ghost dashboard-see-full"
+                      onClick={() => navigate(fullSchedulePath(todaySessions))}
+                    >
+                      See full schedule →
+                    </button>
+                  )}
+                </>
+              )}
             </div>
           </div>
         </>
