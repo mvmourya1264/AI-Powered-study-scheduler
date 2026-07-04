@@ -147,6 +147,49 @@ def extract_text(file: BinaryIO | bytes) -> str:
     return "\n".join(text_parts)
 
 
+def _topic_informativeness(topic: ParsedTopic) -> tuple:
+    """Higher tuple = keep this duplicate over another."""
+    marks = topic["marks"] if topic["marks"] is not None else -1.0
+    priority_rank = {
+        PriorityLevel.HIGH: 3,
+        PriorityLevel.MEDIUM: 2,
+        PriorityLevel.LOW: 1,
+    }[topic["priority"]]
+    return (marks, priority_rank, topic["weight"])
+
+
+def _normalize_title(title: str) -> str:
+    return title.strip().lower()
+
+
+def _dedupe_topics(topics: List[ParsedTopic]) -> List[ParsedTopic]:
+    """Merge repeated titles; keep the occurrence with the best marks/priority info."""
+    best_by_key: dict[str, ParsedTopic] = {}
+    order_keys: list[str] = []
+
+    for topic in topics:
+        key = _normalize_title(topic["title"])
+        if key not in best_by_key:
+            order_keys.append(key)
+            best_by_key[key] = topic
+        elif _topic_informativeness(topic) > _topic_informativeness(best_by_key[key]):
+            best_by_key[key] = topic
+
+    deduped: List[ParsedTopic] = []
+    for i, key in enumerate(order_keys):
+        kept = best_by_key[key]
+        deduped.append(
+            ParsedTopic(
+                title=kept["title"],
+                priority=kept["priority"],
+                weight=kept["weight"],
+                marks=kept["marks"],
+                order_index=i,
+            )
+        )
+    return deduped
+
+
 def parse_syllabus_text(raw_text: str) -> List[ParsedTopic]:
     topics: List[ParsedTopic] = []
     order_index = 0
@@ -194,7 +237,7 @@ def parse_syllabus_text(raw_text: str) -> List[ParsedTopic]:
         order_index += 1
         last_raw_line = line
 
-    return topics
+    return _dedupe_topics(topics)
 
 
 def parse_pdf(file: BinaryIO | bytes) -> tuple[str, List[ParsedTopic]]:

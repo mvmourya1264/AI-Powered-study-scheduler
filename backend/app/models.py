@@ -32,7 +32,7 @@ class Syllabus(Base):
     __tablename__ = "syllabi"
 
     id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
     filename = Column(String, nullable=False)
     raw_text = Column(Text, nullable=True)
     uploaded_at = Column(DateTime, default=datetime.utcnow)
@@ -46,7 +46,7 @@ class Topic(Base):
     __tablename__ = "topics"
 
     id = Column(Integer, primary_key=True, index=True)
-    syllabus_id = Column(Integer, ForeignKey("syllabi.id"), nullable=False)
+    syllabus_id = Column(Integer, ForeignKey("syllabi.id"), nullable=False, index=True)
     title = Column(String, nullable=False)
     priority = Column(Enum(PriorityLevel), default=PriorityLevel.MEDIUM)
     weight = Column(Float, default=1.0)          # numeric weight derived from priority/marks, used by algorithm
@@ -62,8 +62,8 @@ class StudyPlan(Base):
     __tablename__ = "study_plans"
 
     id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
-    syllabus_id = Column(Integer, ForeignKey("syllabi.id"), nullable=False)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    syllabus_id = Column(Integer, ForeignKey("syllabi.id"), nullable=False, index=True)
     total_days = Column(Integer, nullable=False)
     hours_per_day = Column(Float, nullable=False)
     start_date = Column(DateTime, default=datetime.utcnow)
@@ -78,12 +78,12 @@ class ScheduleSession(Base):
     __tablename__ = "schedule_sessions"
 
     id = Column(Integer, primary_key=True, index=True)
-    plan_id = Column(Integer, ForeignKey("study_plans.id"), nullable=False)
-    topic_id = Column(Integer, ForeignKey("topics.id"), nullable=False)
+    plan_id = Column(Integer, ForeignKey("study_plans.id"), nullable=False, index=True)
+    topic_id = Column(Integer, ForeignKey("topics.id"), nullable=False, index=True)
     day_number = Column(Integer, nullable=False)     # 1-indexed day within the plan
     date = Column(DateTime, nullable=True)            # actual calendar date, derived from start_date + day_number
     allocated_hours = Column(Float, nullable=False)
-    completed = Column(Boolean, default=False)
+    completed = Column(Boolean, default=False, index=True)
 
     plan = relationship("StudyPlan", back_populates="sessions")
     topic = relationship("Topic", back_populates="sessions")

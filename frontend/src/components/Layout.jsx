@@ -1,4 +1,6 @@
+import { useState } from "react";
 import { Outlet, useNavigate } from "react-router-dom";
+import ActivityCalendar, { CalendarIcon } from "./ActivityCalendar";
 
 function UserIcon() {
   return (
@@ -20,6 +22,7 @@ function UserIcon() {
 
 export default function Layout() {
   const navigate = useNavigate();
+  const [activityOpen, setActivityOpen] = useState(false);
 
   return (
     <div className="app-shell">
@@ -34,6 +37,13 @@ export default function Layout() {
         <div className="topbar-actions">
           <button
             className="btn ghost topbar-icon-btn"
+            onClick={() => setActivityOpen(true)}
+            aria-label="Activity calendar"
+          >
+            <CalendarIcon />
+          </button>
+          <button
+            className="btn ghost topbar-icon-btn"
             onClick={() => navigate("/profile")}
             aria-label="Profile"
           >
@@ -42,6 +52,7 @@ export default function Layout() {
         </div>
       </div>
       <Outlet />
+      <ActivityCalendar open={activityOpen} onClose={() => setActivityOpen(false)} />
     </div>
   );
 }

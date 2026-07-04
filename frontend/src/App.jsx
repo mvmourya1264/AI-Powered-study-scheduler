@@ -8,6 +8,7 @@ import Profile from "./components/Profile";
 import Layout from "./components/Layout";
 import RequireAuth from "./components/RequireAuth";
 import GuestOnly from "./components/GuestOnly";
+import { AppDataProvider } from "./context/AppDataContext";
 
 export default function App() {
   return (
@@ -23,7 +24,9 @@ export default function App() {
       <Route
         element={
           <RequireAuth>
-            <Layout />
+            <AppDataProvider>
+              <Layout />
+            </AppDataProvider>
           </RequireAuth>
         }
       >

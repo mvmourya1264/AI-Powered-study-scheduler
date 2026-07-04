@@ -1,52 +1,46 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { api } from "../api";
 import { formatDuration } from "../utils/time";
-import { removePlanFromProgress } from "../utils/progress";
+import { useAppData } from "../context/AppDataContext";
 
 export default function Profile() {
   const navigate = useNavigate();
+  const { progress, loading: dataLoading, deletePlan, clearAll, refreshProgress } = useAppData();
   const [profile, setProfile] = useState(null);
-  const [progress, setProgress] = useState(null);
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
-  const [loading, setLoading] = useState(true);
+  const [profileLoading, setProfileLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [deletingAccount, setDeletingAccount] = useState(false);
   const [deletingPlanId, setDeletingPlanId] = useState(null);
   const [accountError, setAccountError] = useState("");
   const [accountSuccess, setAccountSuccess] = useState("");
   const [progressError, setProgressError] = useState("");
-  const loadSeq = useRef(0);
 
   useEffect(() => {
-    load();
+    loadProfile();
   }, []);
 
-  async function load() {
-    const seq = ++loadSeq.current;
-    setLoading(true);
+  async function loadProfile() {
+    setProfileLoading(true);
     setAccountError("");
-    setProgressError("");
     try {
-      const [meRes, progressRes] = await Promise.all([api.getMe(), api.getProgress()]);
-      if (seq !== loadSeq.current) return;
+      const meRes = await api.getMe();
       setProfile(meRes.data);
       setFullName(meRes.data.full_name || "");
       setEmail(meRes.data.email);
-      setProgress(progressRes.data);
+      await refreshProgress();
     } catch {
-      if (seq !== loadSeq.current) return;
       setAccountError("Could not load profile.");
     } finally {
-      if (seq === loadSeq.current) {
-        setLoading(false);
-      }
+      setProfileLoading(false);
     }
   }
 
   function signOut() {
     localStorage.removeItem("token");
+    clearAll();
     navigate("/login", { replace: true });
   }
 
@@ -97,8 +91,7 @@ export default function Profile() {
     setProgressError("");
     setDeletingPlanId(planId);
     try {
-      await api.deletePlan(planId);
-      setProgress((prev) => (prev ? removePlanFromProgress(prev, planId) : prev));
+      await deletePlan(planId);
     } catch (err) {
       setProgressError(err.response?.data?.detail || "Could not delete schedule.");
     } finally {
@@ -125,7 +118,7 @@ export default function Profile() {
     }
   }
 
-  if (loading) {
+  if (profileLoading || dataLoading) {
     return (
       <div className="main">
         <span className="spinner" />

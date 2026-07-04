@@ -50,6 +50,7 @@ export const api = {
   updateMe: (patch) => client.patch("/users/me", patch),
   deleteMe: () => client.delete("/users/me"),
   getProgress: () => client.get("/users/me/progress"),
+  getActivity: () => client.get("/users/me/activity"),
 };
 
 export default client;

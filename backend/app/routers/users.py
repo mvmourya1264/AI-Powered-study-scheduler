@@ -1,4 +1,7 @@
+from datetime import datetime, timedelta, date
+
 from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy import func
 from sqlalchemy.orm import Session, joinedload
 
 from .. import models, schemas
@@ -98,6 +101,59 @@ def get_progress(db: Session = Depends(get_db), user: models.User = Depends(get_
         completed_hours=round(completed_hours, 2),
         percent_complete=_percent_complete(completed_sessions, total_sessions),
         plans=plan_stats,
+    )
+
+
+@router.get("/me/activity", response_model=schemas.ActivityOut)
+def get_activity(db: Session = Depends(get_db), user: models.User = Depends(get_current_user)):
+    now = datetime.utcnow()
+    one_year_ago = now - timedelta(days=365)
+    since = one_year_ago
+    if user.created_at and user.created_at > one_year_ago:
+        since = user.created_at
+
+    rows = (
+        db.query(
+            func.date(models.ScheduleSession.date).label("day"),
+            func.count(models.ScheduleSession.id).label("sessions_completed"),
+            func.sum(models.ScheduleSession.allocated_hours).label("hours_completed"),
+        )
+        .join(models.StudyPlan, models.ScheduleSession.plan_id == models.StudyPlan.id)
+        .filter(
+            models.StudyPlan.user_id == user.id,
+            models.ScheduleSession.completed.is_(True),
+            models.ScheduleSession.date.isnot(None),
+            models.ScheduleSession.date >= since,
+        )
+        .group_by(func.date(models.ScheduleSession.date))
+        .order_by(func.date(models.ScheduleSession.date))
+        .all()
+    )
+
+    days = [
+        schemas.ActivityDay(
+            date=str(row.day),
+            sessions_completed=int(row.sessions_completed),
+            hours_completed=round(float(row.hours_completed or 0), 2),
+        )
+        for row in rows
+    ]
+
+    active_dates = {d.date for d in days if d.sessions_completed > 0}
+    total_active_days = len(active_dates)
+
+    streak = 0
+    check = date.today()
+    if check.isoformat() not in active_dates:
+        check = check - timedelta(days=1)
+    while check.isoformat() in active_dates:
+        streak += 1
+        check = check - timedelta(days=1)
+
+    return schemas.ActivityOut(
+        days=days,
+        current_streak=streak,
+        total_active_days=total_active_days,
     )
 
 

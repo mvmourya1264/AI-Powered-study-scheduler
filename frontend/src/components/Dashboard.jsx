@@ -1,51 +1,16 @@
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { api } from "../api";
-
-function latestPlanBySyllabus(plans) {
-  const bySyllabus = {};
-  for (const plan of plans) {
-    const existing = bySyllabus[plan.syllabus_id];
-    if (!existing || new Date(plan.created_at) > new Date(existing.created_at)) {
-      bySyllabus[plan.syllabus_id] = plan;
-    }
-  }
-  return bySyllabus;
-}
+import { useAppData } from "../context/AppDataContext";
 
 export default function Dashboard() {
   const navigate = useNavigate();
-  const [syllabi, setSyllabi] = useState([]);
-  const [plansBySyllabus, setPlansBySyllabus] = useState({});
-  const [loading, setLoading] = useState(true);
+  const { syllabi, plansBySyllabus, loading, addSyllabus, deleteSyllabus } = useAppData();
   const [uploading, setUploading] = useState(false);
   const [dragActive, setDragActive] = useState(false);
   const [error, setError] = useState("");
   const [deletingId, setDeletingId] = useState(null);
   const fileInput = useRef(null);
-  const loadSeq = useRef(0);
-
-  useEffect(() => {
-    loadSyllabi();
-  }, []);
-
-  async function loadSyllabi() {
-    const seq = ++loadSeq.current;
-    setLoading(true);
-    try {
-      const [syllabiRes, plansRes] = await Promise.all([api.listSyllabi(), api.listPlans()]);
-      if (seq !== loadSeq.current) return;
-      setSyllabi(syllabiRes.data);
-      setPlansBySyllabus(latestPlanBySyllabus(plansRes.data));
-    } catch {
-      if (seq !== loadSeq.current) return;
-      setError("Couldn't load your syllabi.");
-    } finally {
-      if (seq === loadSeq.current) {
-        setLoading(false);
-      }
-    }
-  }
 
   function handleSelectSyllabus(syllabusId) {
     const plan = plansBySyllabus[syllabusId];
@@ -66,7 +31,7 @@ export default function Dashboard() {
     setUploading(true);
     try {
       const res = await api.uploadSyllabus(file);
-      setSyllabi((prev) => [res.data, ...prev]);
+      addSyllabus(res.data);
       navigate(`/topics/${res.data.id}`);
     } catch (err) {
       setError(err?.response?.data?.detail || "Upload failed. Try another file.");
@@ -81,13 +46,7 @@ export default function Dashboard() {
     setError("");
     setDeletingId(id);
     try {
-      await api.deleteSyllabus(id);
-      setSyllabi((prev) => prev.filter((s) => s.id !== id));
-      setPlansBySyllabus((prev) => {
-        const next = { ...prev };
-        delete next[id];
-        return next;
-      });
+      await deleteSyllabus(id);
     } catch (err) {
       setError(err?.response?.data?.detail || "Could not delete syllabus. Try again.");
     } finally {

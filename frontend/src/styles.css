@@ -544,4 +544,116 @@ input[type="text"], input[type="email"], input[type="password"], input[type="num
   .main { padding: 24px 16px 60px; }
   .day-card { grid-template-columns: 44px minmax(0, 1fr); gap: 10px; }
   .plan-summary { flex-wrap: wrap; gap: 16px; }
+  .activity-modal { width: calc(100vw - 32px); }
+}
+
+/* --- Activity calendar modal --- */
+
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(36, 48, 63, 0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 24px;
+}
+
+.modal-card {
+  background: var(--paper-raised);
+  border: 1px solid var(--rule);
+  border-radius: 8px;
+  padding: 24px 28px;
+  max-height: calc(100vh - 48px);
+  overflow: auto;
+  box-shadow: 0 12px 40px rgba(36, 48, 63, 0.12);
+}
+
+.activity-modal {
+  width: min(720px, 100%);
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.activity-summary {
+  display: flex;
+  gap: 28px;
+  margin-bottom: 20px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--rule);
+}
+
+.activity-heatmap-wrap {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding-bottom: 8px;
+}
+
+.activity-day-labels {
+  display: grid;
+  grid-template-rows: repeat(7, 14px);
+  gap: 3px;
+  padding-top: 1px;
+}
+
+.activity-day-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--ink-soft);
+  line-height: 14px;
+}
+
+.activity-heatmap {
+  display: flex;
+  gap: 3px;
+}
+
+.activity-week {
+  display: grid;
+  grid-template-rows: repeat(7, 14px);
+  gap: 3px;
+}
+
+.activity-cell {
+  width: 14px;
+  height: 14px;
+  border-radius: 3px;
+  background: var(--rule);
+}
+
+.activity-cell.empty {
+  background: transparent;
+}
+
+.activity-cell.level-0 { background: var(--rule); }
+.activity-cell.level-1 { background: var(--low-tint); }
+.activity-cell.level-2 { background: var(--medium-tint); }
+.activity-cell.level-3 { background: var(--low); }
+
+.activity-tooltip {
+  margin-top: 12px;
+  font-size: 13px;
+  color: var(--ink-soft);
+  display: flex;
+  gap: 8px;
+}
+
+.activity-legend {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 16px;
+}
+
+.activity-legend .activity-cell {
+  width: 12px;
+  height: 12px;
 }

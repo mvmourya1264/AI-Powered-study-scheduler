@@ -1,7 +1,7 @@
 from typing import List
 
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 
 from .. import models, schemas
 from ..auth import get_current_user
@@ -57,7 +57,12 @@ async def upload_syllabus(
 
 @router.get("/", response_model=List[schemas.SyllabusOut])
 def list_syllabi(db: Session = Depends(get_db), user: models.User = Depends(get_current_user)):
-    return db.query(models.Syllabus).filter(models.Syllabus.user_id == user.id).all()
+    return (
+        db.query(models.Syllabus)
+        .options(joinedload(models.Syllabus.topics))
+        .filter(models.Syllabus.user_id == user.id)
+        .all()
+    )
 
 
 @router.get("/{syllabus_id}", response_model=schemas.SyllabusOut)

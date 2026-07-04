@@ -120,3 +120,15 @@ class ProgressOut(BaseModel):
     completed_hours: float
     percent_complete: float
     plans: List[PlanProgress] = []
+
+
+class ActivityDay(BaseModel):
+    date: str
+    sessions_completed: int
+    hours_completed: float
+
+
+class ActivityOut(BaseModel):
+    days: List[ActivityDay] = []
+    current_streak: int
+    total_active_days: int

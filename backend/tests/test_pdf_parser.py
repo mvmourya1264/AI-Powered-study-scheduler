@@ -30,6 +30,14 @@ class ParseSyllabusTextTests(unittest.TestCase):
         self.assertEqual(len(topics), 1)
         self.assertEqual(topics[0]["title"], "Thermodynamics and heat transfer")
 
+    def test_duplicate_titles_deduped_keeps_higher_marks(self):
+        raw = "Mechanics (5 marks)\nMechanics\nCalculus\n"
+        topics = parse_syllabus_text(raw)
+        titles = [t["title"] for t in topics]
+        self.assertEqual(len(topics), 2)
+        self.assertEqual(titles, ["Mechanics", "Calculus"])
+        self.assertEqual(topics[0]["marks"], 5.0)
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -14,6 +14,9 @@ models.Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="Study Scheduler API")
 
+# Render free tier: the service sleeps after ~15 min idle; the first request after
+# wake-up can take 30–50s. That latency is platform behavior, not an app bug.
+
 # CORS_ORIGINS env var: comma-separated list, e.g.
 # "http://localhost:5173,https://your-app.vercel.app"
 default_origins = "http://localhost:5173,http://localhost:3000"

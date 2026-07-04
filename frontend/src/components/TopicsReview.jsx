@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { api } from "../api";
+import { useAppData } from "../context/AppDataContext";
 
 const PRIORITIES = ["high", "medium", "low"];
 
@@ -8,6 +9,7 @@ export default function TopicsReview() {
   const navigate = useNavigate();
   const { syllabusId } = useParams();
   const id = Number(syllabusId);
+  const { addPlan } = useAppData();
 
   const [syllabus, setSyllabus] = useState(null);
   const [newTitle, setNewTitle] = useState("");
@@ -65,6 +67,7 @@ export default function TopicsReview() {
         hours_per_day: Number(hoursPerDay),
         start_date: startDate ? new Date(startDate).toISOString() : null,
       });
+      addPlan(res.data);
       navigate(`/schedule/${res.data.id}`);
     } catch (err) {
       setError(err?.response?.data?.detail || "Couldn't generate the plan.");
