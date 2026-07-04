@@ -79,8 +79,14 @@ def _extract_topics_from_upload(
     if is_pdf:
         if raw_text:
             return raw_text, parse_syllabus_text(raw_text)
-        fallback_raw, fallback_topics = parse_pdf(contents)
-        return fallback_raw, fallback_topics
+        try:
+            fallback_raw, fallback_topics = parse_pdf(contents)
+            return fallback_raw, fallback_topics
+        except Exception as exc:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Could not read the PDF: {exc}",
+            ) from None
 
     raise HTTPException(status_code=502, detail="Topic extraction failed.")
 
