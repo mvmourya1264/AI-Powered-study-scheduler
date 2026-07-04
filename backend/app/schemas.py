@@ -1,6 +1,6 @@
 from datetime import datetime
 from typing import Optional, List
-from pydantic import BaseModel, EmailStr, ConfigDict
+from pydantic import BaseModel, EmailStr, ConfigDict, field_validator
 from .models import PriorityLevel
 
 
@@ -16,12 +16,27 @@ class UserOut(BaseModel):
     id: int
     email: EmailStr
     full_name: Optional[str] = None
+    daily_start_time: str = "09:00"
     created_at: datetime
 
 
 class UserUpdate(BaseModel):
     full_name: Optional[str] = None
     email: Optional[EmailStr] = None
+    daily_start_time: Optional[str] = None
+
+    @field_validator("daily_start_time")
+    @classmethod
+    def validate_daily_start_time(cls, value: Optional[str]) -> Optional[str]:
+        if value is None:
+            return value
+        parts = value.strip().split(":")
+        if len(parts) != 2:
+            raise ValueError("daily_start_time must be HH:MM")
+        hour, minute = int(parts[0]), int(parts[1])
+        if not (0 <= hour <= 23 and 0 <= minute <= 59):
+            raise ValueError("daily_start_time must be a valid time")
+        return f"{hour:02d}:{minute:02d}"
 
 
 class Token(BaseModel):
@@ -147,3 +162,47 @@ class CalendarSession(BaseModel):
 class CalendarDay(BaseModel):
     date: str
     sessions: List[CalendarSession] = []
+
+
+# ---------- Dashboard ----------
+class DashboardSession(BaseModel):
+    session_id: int
+    topic_title: str
+    priority: PriorityLevel
+    start_time: str
+    end_time: str
+    completed: bool
+    plan_id: int
+
+
+class DashboardToday(BaseModel):
+    date: str
+    total_hours_scheduled: float
+    total_hours_completed: float
+    sessions_completed: int
+    sessions_total: int
+    sessions: List[DashboardSession] = []
+
+
+class WeeklyDayHours(BaseModel):
+    date: str
+    hours_completed: float
+
+
+class SubjectProgress(BaseModel):
+    plan_id: int
+    syllabus_filename: str
+    percent_complete: float
+    hours_completed: float
+    hours_total: float
+    total_sessions: int
+    completed_sessions: int
+
+
+class DashboardOut(BaseModel):
+    greeting_name: str
+    streak_days: int
+    today: DashboardToday
+    daily_goal_hours: float
+    weekly_study_hours: List[WeeklyDayHours]
+    subject_progress: List[SubjectProgress] = []

@@ -7,10 +7,11 @@ from fastapi.middleware.cors import CORSMiddleware
 load_dotenv()
 
 from . import models
-from .database import engine
+from .database import engine, run_migrations
 from .routers import auth, syllabus, plan, users
 
 models.Base.metadata.create_all(bind=engine)
+run_migrations(engine)
 
 app = FastAPI(title="Study Scheduler API")
 

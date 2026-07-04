@@ -10,6 +10,7 @@ export default function Profile() {
   const [profile, setProfile] = useState(null);
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
+  const [dailyStartTime, setDailyStartTime] = useState("09:00");
   const [profileLoading, setProfileLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [deletingAccount, setDeletingAccount] = useState(false);
@@ -30,6 +31,7 @@ export default function Profile() {
       setProfile(meRes.data);
       setFullName(meRes.data.full_name || "");
       setEmail(meRes.data.email);
+      setDailyStartTime(meRes.data.daily_start_time || "09:00");
       await refreshProgress();
     } catch {
       setAccountError("Could not load profile.");
@@ -58,6 +60,9 @@ export default function Profile() {
     if (email !== profile.email) {
       patch.email = email;
     }
+    if (dailyStartTime !== (profile.daily_start_time || "09:00")) {
+      patch.daily_start_time = dailyStartTime;
+    }
 
     if (Object.keys(patch).length === 0) {
       setAccountSuccess("No changes to save.");
@@ -70,6 +75,7 @@ export default function Profile() {
       setProfile(res.data);
       setFullName(res.data.full_name || "");
       setEmail(res.data.email);
+      setDailyStartTime(res.data.daily_start_time || "09:00");
 
       if (patch.email) {
         alert("Email updated — please sign in again with your new email.");
@@ -160,6 +166,18 @@ export default function Profile() {
             onChange={(e) => setEmail(e.target.value)}
             required
           />
+        </div>
+        <div className="field">
+          <label htmlFor="dailyStartTime">Daily study start time</label>
+          <input
+            id="dailyStartTime"
+            type="time"
+            value={dailyStartTime}
+            onChange={(e) => setDailyStartTime(e.target.value)}
+          />
+          <p className="topic-meta" style={{ marginTop: 6, marginBottom: 0 }}>
+            Used to compute clock times on your dashboard schedule.
+          </p>
         </div>
         {accountError && <div className="error-msg">{accountError}</div>}
         {accountSuccess && (

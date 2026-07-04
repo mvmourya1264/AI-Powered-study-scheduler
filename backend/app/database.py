@@ -23,3 +23,22 @@ def get_db():
         yield db
     finally:
         db.close()
+
+
+def run_migrations(engine):
+    """Lightweight column migrations for deployments without Alembic."""
+    from sqlalchemy import inspect, text
+
+    insp = inspect(engine)
+    if "users" not in insp.get_table_names():
+        return
+
+    columns = {c["name"] for c in insp.get_columns("users")}
+    if "daily_start_time" not in columns:
+        with engine.begin() as conn:
+            conn.execute(
+                text(
+                    "ALTER TABLE users ADD COLUMN daily_start_time VARCHAR(5) "
+                    "NOT NULL DEFAULT '09:00'"
+                )
+            )
