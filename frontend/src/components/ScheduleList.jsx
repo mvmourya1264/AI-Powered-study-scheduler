@@ -2,12 +2,7 @@ import { useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { api } from "../api";
 import { useAppData } from "../context/AppDataContext";
-
-const BOOK_STYLES = [
-  { bg: "var(--high-tint)", border: "var(--high)", accent: "var(--high)" },
-  { bg: "var(--medium-tint)", border: "var(--medium)", accent: "var(--medium)" },
-  { bg: "var(--low-tint)", border: "var(--low)", accent: "var(--low)" },
-];
+import BookSpine, { truncateFilename } from "./BookSpine";
 
 const SYLLABUS_ACCEPT =
   "application/pdf,image/jpeg,image/png,image/webp,.pdf,.jpg,.jpeg,.png,.webp";
@@ -17,13 +12,6 @@ const SYLLABUS_EXTENSIONS = [".pdf", ".jpg", ".jpeg", ".png", ".webp"];
 function isSupportedSyllabusFile(file) {
   const name = file.name.toLowerCase();
   return SYLLABUS_EXTENSIONS.some((ext) => name.endsWith(ext));
-}
-
-function truncateFilename(name, max = 28) {
-  if (name.length <= max) return name;
-  const ext = name.includes(".") ? name.slice(name.lastIndexOf(".")) : "";
-  const base = name.slice(0, name.length - ext.length);
-  return `${base.slice(0, max - ext.length - 1)}…${ext}`;
 }
 
 export default function ScheduleList() {
@@ -137,50 +125,37 @@ export default function ScheduleList() {
         <div className="bookshelf">
           {syllabi.map((s, index) => {
             const plan = plansBySyllabus[s.id];
-            const style = BOOK_STYLES[index % BOOK_STYLES.length];
             return (
-              <article
+              <BookSpine
                 key={s.id}
-                className="book-spine"
-                style={{
-                  background: style.bg,
-                  borderColor: style.border,
-                }}
-                onClick={() => handleSelectSyllabus(s.id)}
-                role="button"
-                tabIndex={0}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" || e.key === " ") {
-                    e.preventDefault();
-                    handleSelectSyllabus(s.id);
-                  }
-                }}
-              >
-                <div className="book-spine-top" style={{ borderBottomColor: style.border }}>
-                  <h3 className="book-spine-title" style={{ color: style.accent }}>
-                    {truncateFilename(s.filename)}
-                  </h3>
+                index={index}
+                title={truncateFilename(s.filename)}
+                ariaLabel={`Open ${s.filename}`}
+                onActivate={() => handleSelectSyllabus(s.id)}
+                meta={
                   <p className="book-spine-meta">
                     {s.topics.length} topics
                     <br />
                     {new Date(s.uploaded_at).toLocaleDateString()}
                   </p>
-                </div>
-                <div className="book-spine-actions">
-                  <span className={`book-spine-link${plan ? " has-plan" : ""}`}>
-                    {plan ? "View schedule" : "Set up"}
-                  </span>
-                  <button
-                    type="button"
-                    className="btn danger book-spine-delete"
-                    disabled={deletingId === s.id}
-                    onClick={(e) => handleDelete(s.id, e)}
-                    aria-label={`Delete ${s.filename}`}
-                  >
-                    {deletingId === s.id ? <span className="spinner" /> : "Delete"}
-                  </button>
-                </div>
-              </article>
+                }
+                actions={
+                  <>
+                    <span className={`book-spine-link${plan ? " has-plan" : ""}`}>
+                      {plan ? "View schedule" : "Set up"}
+                    </span>
+                    <button
+                      type="button"
+                      className="btn danger book-spine-delete"
+                      disabled={deletingId === s.id}
+                      onClick={(e) => handleDelete(s.id, e)}
+                      aria-label={`Delete ${s.filename}`}
+                    >
+                      {deletingId === s.id ? <span className="spinner" /> : "Delete"}
+                    </button>
+                  </>
+                }
+              />
             );
           })}
         </div>

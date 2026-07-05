@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { api } from "../api";
 import { formatDuration } from "../utils/time";
 import { useAppData } from "../context/AppDataContext";
+import BookSpine, { truncateFilename } from "./BookSpine";
 
 export default function Profile() {
   const navigate = useNavigate();
@@ -215,44 +216,49 @@ export default function Profile() {
             </div>
           </div>
 
-          <div className="progress-plan-list" style={{ marginBottom: 40 }}>
-            {progress.plans.map((plan) => (
-              <div
-                className="progress-plan-card card progress-plan-clickable"
+          <div className="bookshelf" style={{ marginBottom: 40 }}>
+            {progress.plans.map((plan, index) => (
+              <BookSpine
                 key={plan.plan_id}
-                onClick={() => navigate(`/schedule/${plan.plan_id}`)}
-                role="button"
-                tabIndex={0}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" || e.key === " ") {
-                    e.preventDefault();
-                    navigate(`/schedule/${plan.plan_id}`);
-                  }
-                }}
-              >
-                <div className="progress-plan-header">
-                  <div>
-                    <div style={{ fontWeight: 500 }}>{plan.syllabus_filename}</div>
-                    <div className="topic-meta">
-                      {plan.completed_sessions}/{plan.total_sessions} sessions
+                index={index}
+                title={truncateFilename(plan.syllabus_filename)}
+                ariaLabel={`View schedule for ${plan.syllabus_filename}`}
+                onActivate={() => navigate(`/schedule/${plan.plan_id}`)}
+                meta={
+                  <p className="book-spine-meta">
+                    {plan.completed_sessions}/{plan.total_sessions} sessions
+                  </p>
+                }
+                body={
+                  <>
+                    <div className="book-spine-progress-pct">{plan.percent_complete}%</div>
+                    <div className="progress-bar">
+                      <div
+                        className="progress-bar-fill"
+                        style={{ width: `${plan.percent_complete}%`, background: "var(--low)" }}
+                      />
                     </div>
-                  </div>
-                  <button
-                    className="btn danger"
-                    type="button"
-                    disabled={deletingPlanId === plan.plan_id}
-                    onClick={(e) => handleDeletePlan(plan.plan_id, e)}
-                  >
-                    {deletingPlanId === plan.plan_id ? <span className="spinner" /> : "Delete"}
-                  </button>
-                </div>
-                <div className="progress-bar" style={{ marginTop: 10 }}>
-                  <div
-                    className="progress-bar-fill"
-                    style={{ width: `${plan.percent_complete}%`, background: "var(--low)" }}
-                  />
-                </div>
-              </div>
+                  </>
+                }
+                actions={
+                  <>
+                    <span className="book-spine-link has-plan">View schedule</span>
+                    <button
+                      type="button"
+                      className="btn danger book-spine-delete"
+                      disabled={deletingPlanId === plan.plan_id}
+                      onClick={(e) => handleDeletePlan(plan.plan_id, e)}
+                      aria-label={`Delete schedule for ${plan.syllabus_filename}`}
+                    >
+                      {deletingPlanId === plan.plan_id ? (
+                        <span className="spinner" />
+                      ) : (
+                        "Delete"
+                      )}
+                    </button>
+                  </>
+                }
+              />
             ))}
           </div>
         </>

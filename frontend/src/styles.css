@@ -906,6 +906,24 @@ input[type="text"], input[type="email"], input[type="password"], input[type="num
   margin: 0;
 }
 
+.book-spine-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 6px;
+  margin-bottom: 12px;
+  min-width: 0;
+}
+
+.book-spine-progress-pct {
+  font-family: var(--font-display);
+  font-size: 20px;
+  font-weight: 600;
+  line-height: 1;
+  color: var(--ink);
+}
+
 .book-spine-actions {
   display: flex;
   flex-direction: column;
@@ -1060,30 +1078,6 @@ input[type="text"], input[type="email"], input[type="password"], input[type="num
   transition: width 0.2s ease;
 }
 
-.progress-plan-list {
-  display: grid;
-  gap: 14px;
-}
-
-.progress-plan-card {
-  padding: 20px 24px;
-}
-
-.progress-plan-clickable {
-  cursor: pointer;
-}
-
-.progress-plan-clickable:hover {
-  border-color: var(--focus-ring);
-}
-
-.progress-plan-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: 16px;
-}
-
 .topbar-icon-btn {
   display: inline-flex;
   align-items: center;
@@ -1099,21 +1093,6 @@ input[type="text"], input[type="email"], input[type="password"], input[type="num
 .danger-zone {
   border-color: var(--high-tint);
   background: var(--paper);
-}
-
-.progress-plan-pct {
-  font-family: var(--font-display);
-  font-size: 22px;
-  font-weight: 600;
-  flex-shrink: 0;
-}
-
-.progress-plan-footer {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-top: 10px;
-  gap: 12px;
 }
 
 .tabs {
@@ -1599,17 +1578,6 @@ input[type="text"], input[type="email"], input[type="password"], input[type="num
   }
 
   /* Profile */
-  .progress-plan-header {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 12px;
-  }
-
-  .progress-plan-header .btn.danger {
-    align-self: flex-start;
-    min-height: 44px;
-  }
-
   .danger-zone .btn.danger {
     width: 100%;
     justify-content: center;
